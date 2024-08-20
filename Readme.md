@@ -1,9 +1,9 @@
 # Mini Drone
 
 ## ハードウェア
-+ Arduino nano 33 BLE ... BLEユニットとIMUが搭載されたマイコン（https://ssci.to/7667）
-+ VL53L0X Time-of-Flight 距離センサモジュール ... ToF測距センサ（https://ssci.to/2894）
-+ MOS FET？ ... モータ制御用のトランジスタ．2SK4019？（https://eleshop.jp/shop/g/gECF311/）．
++ Arduino nano 33 BLE ... BLEユニットとIMUが搭載されたマイコン（[https://ssci.to/7667](https://ssci.to/7667)）
++ VL53L0X Time-of-Flight 距離センサモジュール ... ToF測距センサ（[https://ssci.to/2894](https://ssci.to/2894)）
++ MOS FET？ ... モータ制御用のトランジスタ．2SK4019？（[https://eleshop.jp/shop/g/gECF311/](https://eleshop.jp/shop/g/gECF311/)）．
 
 ## 使用するライブラリ
 + `ArduinoBLE.h` ... BLE(Bluetooth Low Energy)を使用するためのライブラリ．
@@ -29,7 +29,7 @@ sequenceDiagram # シーケンス図の定義
     autonumber # 信号に番号をつける
 
     # 各要素の定義
-    participant DebugDO as DO2 # デバッグ用DOポート
+    participant DebugDO as DO2<br>(デジタル出力ポート) # デバッグ用DOポート
     participant Sen as 測距センサ<br>(VL53L0X) # I2C接続
     participant Micon as マイコン
     participant PC as 地上局PC  # PC（地上局）
@@ -75,6 +75,84 @@ sequenceDiagram # シーケンス図の定義
     end
 
 ```
+
+## コードの構成図
+機能ごとにソースコードを分けて，メイン（`miniDrone.ino`）から呼び出して使用する構造にする．
+これにより，機能の追加実装やテスト，複数人での開発が容易になることが期待できる．
+```mermaid
+graph TD
+    classDef h fill:transparent, stroke:#9370DB
+    classDef cpp fill:transparent
+    classDef ino fill:transparent
+
+    %% style some-group fill:transparent,stroke:#9370DB
+    subgraph BLE [BLE機能のユニット]
+        subgraph hBT [BLE.h]
+            conBT[定数の定義]
+            ~~~ proBT[関数のプロトタイプ宣言]
+        end
+        subgraph cppBT [BLE.cpp]
+            valBT[変数の定義]
+            ~~~ funBT[関数の中身の実装]
+        end
+        hBT --インクルード--> cppBT
+        %%funBT --予め定義--> proBT
+    end
+    subgraph ControlTimer [Timer機能のユニット]
+        subgraph hCT [ControlTimer.h]
+            conCT[定数の定義]
+            ~~~ proCT[関数のプロトタイプ宣言]
+        end
+        subgraph cppCT [ControlTimer.cpp]
+            valCT[変数の定義]
+            ~~~ funCT[関数の中身の実装]
+        end
+        hCT --インクルード--> cppCT
+    end
+    subgraph UnitX [・・・機能のユニット]
+        subgraph hX [xxx.h]
+            conX[定数の定義]
+            ~~~ proX[関数のプロトタイプ宣言]
+        end
+        subgraph cppX [xxx.cpp]
+            valX[変数の定義]
+            ~~~ funX[関数の中身の実装]
+        end
+        hX --インクルード--> cppX
+    end
+    subgraph miniDrone[miniDrone.ino]
+        inc1["#include "必要な機能1""]
+        inc2["#include "必要な機能2""]
+        incx["#include "必要な機能xxx""]
+
+        subgraph Global[グローバル変数・関数]
+            global[グローバル変数の定義]
+            ~~~ globalfun[関数の定義]
+        end
+
+        subgraph loop[loop関数]
+            callfunX[関数の使用]
+        end
+        
+        setup[setup関数]
+
+        inc1 -.- inc2
+        inc2 -.- incx
+        incx -.-> setup
+
+        setup --> loop
+        %%loop --ループ--> loop
+
+        Global --> loop
+        funX -.-関数の呼び出し-.-> callfunX
+        %%funX -.-関数の呼び出し-.-> setup
+
+        hBT --インクルード--> inc1
+        hCT --インクルード--> inc2
+        hX --インクルード--> incx
+    end
+```
+
 ## 動作確認環境
 
 
