@@ -19,11 +19,14 @@ char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
 float* vec ;  // 姿勢を格納した配列のポインタ格納用変数
 uint16_t alti ; // 高度を格納する変数
 
+int mode = 0; // モードを保持するための変数
+
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
 void genMsgBLE( unsigned long t, float* v, uint16_t alti ){
 //void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
-  sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
+  //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
+  sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d,%d", t, v[0], v[1], v[2], alti, mode);
 }
 
 // 制御周期確認用のDO切り替え関数
@@ -84,8 +87,22 @@ void loop() {
   if ( isConnectedToPeripheral() ){ // セントラルがペリフェラルに接続されているかの確認
     while ( centralStillConnected() ){  // セントラルが接続されている間ループ
 
+      // BLE通信の指令の受信・解釈
       pollBLE(); // BLEスタックの更新
       bool temp = checkWrittenMessage(); // 書き込まれたメッセージを確認
+      if( true == temp ){ // 戻り値のチェック，trueなら指令として読み込む
+        char cmd = getWrittenMessageHead() ; // 読み込んだ文字を取得
+        switch (cmd){
+          case '1': // 受信文字が（char型の）'1'なら
+            mode = 1; // モードを1に変更
+            break;
+          case '0': // 受信文字が（char型の）'0'なら
+            mode = 0; // モードを0に変更
+            break;
+          default:
+            break;
+        }
+      }
 
       // 制御用タイマー割り込みフラグがオンならif文の中へ
       if ( getTmConFlag() ){

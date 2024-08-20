@@ -1,7 +1,7 @@
 # Mini Drone
 
 ## ハードウェア
-+ Arduino nano 33 BLE ... BLEユニットとIMUが搭載されたマイコン（[https://ssci.to/7667](https://ssci.to/7667)）
++ Arduino nano 33 BLE ... BLEモジュールとIMUが搭載されたマイコン（[https://ssci.to/7667](https://ssci.to/7667)）
 + VL53L0X Time-of-Flight 距離センサモジュール ... ToF測距センサ（[https://ssci.to/2894](https://ssci.to/2894)）
 + MOS FET？ ... モータ制御用のトランジスタ．2SK4019？（[https://eleshop.jp/shop/g/gECF311/](https://eleshop.jp/shop/g/gECF311/)）．
 
