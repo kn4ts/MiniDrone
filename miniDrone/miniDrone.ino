@@ -9,17 +9,17 @@
 
 // 物理ピン関係の変数
 #define STATE_DO D2 // 制御周期確認用のDOポート
-bool checkTsDO = false ; // 制御周期確認用DOポートの状態変数
+static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変数
 
 // BLE通信用変数
-String rstr ;  // BLE受信文字列の宣言
-char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
+static String rstr ;  // BLE受信文字列の宣言
+static char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
-float* vec ;  // 姿勢を格納した配列のポインタ格納用変数
-uint16_t alti ; // 高度を格納する変数
+static float* vec ;  // 姿勢を格納した配列のポインタ格納用変数
+static uint16_t alti ; // 高度を格納する変数
 
-int mode = 0; // モードを保持するための変数
+static int mode = 0; // モードを保持するための変数
 
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数

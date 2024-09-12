@@ -8,19 +8,19 @@
 #include "../inc/ControlTimer.h"
 
 // Tickerオブジェクトを定義
-mbed::Ticker tmCon; // 制御周期のタイマー
-mbed::Ticker tmBle; // BLE通信用のタイマー
-mbed::Ticker tmToF; // 測距センサ用のタイマー
+static mbed::Ticker tmCon; // 制御周期のタイマー
+static mbed::Ticker tmBle; // BLE通信用のタイマー
+static mbed::Ticker tmToF; // 測距センサ用のタイマー
 
 // タイマーフラグ変数の宣言
-bool tmConFlag = false;
-bool tmBleFlag = false;
-bool tmToFFlag = false;
+static bool tmConFlag = false;
+static bool tmBleFlag = false;
+static bool tmToFFlag = false;
 
 // タイマー周期の定義 [s]
-const float TsCon = 0.01 ;
-const float TsBle = 0.1 ; // 100msが最短？
-const float TsToF = 0.03 ;
+static const float TsCon = 0.01 ;
+static const float TsBle = 0.1 ; // 100msが最短？
+static const float TsToF = 0.03 ;
 
 // 制御用割り込み関数
 void onTimerCon() {

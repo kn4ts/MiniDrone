@@ -8,16 +8,16 @@
 #include "../inc/BLE.h"
 
 // BLEの（カスタム）サービスを宣言（固有のUUIDを使う）
-BLEService myS( SERVICE_UUID );
+static BLEService myS( SERVICE_UUID );
 // BLEの（カスタム）キャラクタリスティックを宣言（固有のUUIDを使う）
-BLECharacteristic myC1(CHARACTERISTIC_UUID1, BLERead | BLENotify, 50); // 読み取り属性
-BLECharacteristic myC2(CHARACTERISTIC_UUID2, BLEWrite, 20); // 書き込み属性
+static BLECharacteristic myC1(CHARACTERISTIC_UUID1, BLERead | BLENotify, 50); // 読み取り属性
+static BLECharacteristic myC2(CHARACTERISTIC_UUID2, BLEWrite, 20); // 書き込み属性
 
 // セントラル（接続先）のインスタンスを生成
-BLEDevice central;
+static BLEDevice central;
 
-char writtenMsgHead ; // メッセージの先頭文字を格納する変数
-size_t writtenLen ; // メッセージの長さを格納する変数
+static char writtenMsgHead ; // メッセージの先頭文字を格納する変数
+static size_t writtenLen ; // メッセージの長さを格納する変数
 
 // BLEの初期設定関数
 bool setupBLE() {

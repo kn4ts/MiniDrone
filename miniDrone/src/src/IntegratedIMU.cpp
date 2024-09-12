@@ -7,17 +7,17 @@
 */
 #include "../inc/IntegratedIMU.h"
 
-float imu_ac[3] ;   // 加速度 x, y, z 方向
-float imu_gy[3] ;   // ジャイロ計測値 x, y, z 軸周り
-float imu_mg[3] ;   // 地磁気計測値 x, y, z 方向
+static float imu_ac[3] ;   // 加速度 x, y, z 方向
+static float imu_gy[3] ;   // ジャイロ計測値 x, y, z 軸周り
+static float imu_mg[3] ;   // 地磁気計測値 x, y, z 方向
 
-float attitude[3] ;  // 姿勢角 roll, pitch, yaw
+static float attitude[3] ;  // 姿勢角 roll, pitch, yaw
 
 // 相補フィルタ計算のための変数定義
-unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
-float deltaTime ; // 時刻の差分を格納する変数
+static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
+static float deltaTime ; // 時刻の差分を格納する変数
 
-const float alpha = 0.98; // 相補フィルタの係数
+static const float alpha = 0.98; // 相補フィルタの係数
 
 // 内臓IMUの初期化関数
 bool initIMU(){

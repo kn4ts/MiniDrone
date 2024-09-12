@@ -8,8 +8,8 @@
 #include "../inc/SensorI2C.h"
 
 // ToFセンサ（測距センサ）のインスタンス生成
-VL53L0X senToF;
-uint16_t dist = 0; // 距離計測値の格納用変数
+static VL53L0X senToF;
+static uint16_t dist = 0; // 距離計測値の格納用変数
 
 // BLEの初期設定関数
 bool initSensorI2C(){
