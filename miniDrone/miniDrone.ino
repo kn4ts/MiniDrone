@@ -45,6 +45,8 @@ void setup() {
   pinMode( LED_BUILTIN, OUTPUT ); // 内臓LEDの設定（デバッグ用）
   pinMode( STATE_DO, OUTPUT );  // 制御周期確認用DOポートの設定（デバッグ用）
 
+  pinMode( D5, OUTPUT );  // D5ピンをOUTPUT（出力）に設定
+
   // シリアル通信の初期設定
   openSerial();
 
@@ -99,6 +101,9 @@ void loop() {
           case '0': // 受信文字が（char型の）'0'なら
             mode = 0; // モードを0に変更
             break;
+          case '2': // 受信文字が（char型の）'0'なら
+            mode = 2; // モードを2に変更
+            break;
           default:
             break;
         }
@@ -119,10 +124,17 @@ void loop() {
         /*
           ここに制御則を実装する
         */
-
+        
         /*
           ここにアクチュエータ駆動のコードを実装する
         */
+        if( mode > 1 ){
+          analogWrite( D5, 100 ); // D5ピンを100
+        }else if( mode > 0 ){
+          analogWrite( D5, 255 ); // D5ピンをHIGH(255)に設定
+        }else{
+          analogWrite( D5, 0 ); // D5ピンをLOW(0)に設定
+        }
 
         // デバッグ用DOポートをトグル -> 100Hz出ているか確認用
         toggleDO();
