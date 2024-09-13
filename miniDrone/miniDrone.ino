@@ -6,6 +6,7 @@
 #include "src/inc/ControlTimer.h" // タイマー用のヘッダファイル
 #include "src/inc/IntegratedIMU.h"  // 内臓IMU用のヘッダファイル
 #include "src/inc/SensorI2C.h"  // I2C接続用のヘッダファイル
+#include "src/inc/Actuator.h" // アクチュエータ（PWM指令）のヘッダファイル
 
 // 物理ピン関係の変数
 #define STATE_DO D2 // 制御周期確認用のDOポート
@@ -20,6 +21,9 @@ static float* vec ;  // 姿勢を格納した配列のポインタ格納用変�
 static uint16_t alti ; // 高度を格納する変数
 
 static int mode = 0; // モードを保持するための変数
+
+static int uc[4] ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static int* u ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
@@ -77,6 +81,9 @@ void setup() {
       delay(2000);
     };
   }
+
+  // アクチュエータ（モータ）の初期設定
+  setupPWMpin();
 }
 
 /* メインループ */
@@ -99,6 +106,18 @@ void loop() {
           case '0': // 受信文字が（char型の）'0'なら
             mode = 0; // モードを0に変更
             break;
+          case '2': // 受信文字が（char型の）'2'なら
+            mode = 2; // モードを1に変更
+            break;
+          case '3': // 受信文字が（char型の）'2'なら
+            mode = 3; // モードを1に変更
+            break;
+          case '4': // 受信文字が（char型の）'2'なら
+            mode = 4; // モードを1に変更
+            break;
+          case '5': // 受信文字が（char型の）'2'なら
+            mode = 5; // モードを1に変更
+            break;
           default:
             break;
         }
@@ -119,10 +138,56 @@ void loop() {
         /*
           ここに制御則を実装する
         */
+        switch (mode)
+        {
+        case 0:
+          uc[0] = 0;
+          uc[1] = 0;
+          uc[2] = 0;
+          uc[3] = 0;
+          break;
+        case 1:
+          uc[0] = 10;
+          uc[1] = 10;
+          uc[2] = 10;
+          uc[3] = 10;
+          break;
+        case 2:
+          uc[0] = 30;
+          uc[1] = 30;
+          uc[2] = 30;
+          uc[3] = 30;
+          break;
+        case 3:
+          uc[0] = 50;
+          uc[1] = 50;
+          uc[2] = 50;
+          uc[3] = 50;
+          break;
+        case 4:
+          uc[0] = 80;
+          uc[1] = 80;
+          uc[2] = 80;
+          uc[3] = 80;
+          break;
+        case 5:
+          uc[0] = 100;
+          uc[1] = 100;
+          uc[2] = 100;
+          uc[3] = 100;
+          break;
+        default:
+          uc[0] = 0;
+          uc[1] = 0;
+          uc[2] = 0;
+          uc[3] = 0;
+          break;
+        }
 
         /*
           ここにアクチュエータ駆動のコードを実装する
         */
+        u = driveActuator( &uc[0] ); // 制御器出力でアクチュエータを駆動
 
         // デバッグ用DOポートをトグル -> 100Hz出ているか確認用
         toggleDO();
