@@ -20,10 +20,10 @@ int* driveActuator( int* uc ){
     // 飽和関数へ通す
     up[0] = saturatePWM(uc[0]);
     up[1] = saturatePWM(uc[1]);
-    up[2] = saturatePWM(uc[3]);
-    up[3] = saturatePWM(uc[4]);
+    up[2] = saturatePWM(uc[2]);
+    up[3] = saturatePWM(uc[3]);
     // PWM出力を更新
-    set_PWM_4ch( up[0], up[1], up[2], up[4] );
+    set_PWM_4ch( up[0], up[1], up[2], up[3] );
     return &up[0]; // int配列upの先頭アドレスを返す
 }
 

@@ -9,14 +9,14 @@
     #include<Arduino.h>
 
     /* ピン定義
-        2   1
+        4   1
          \ /
           ↑ head
          / \
-        3   4
+        3   2
 
         番号    |  1  |  2  |  3  |  4  |
-        回転方向 | CW | CCW | CW  | CCW |
+        回転方向 | CCW | CW | CCW  | CW |
         ピン配置 | D5 | D6  | D7  | D8  |
     */
     #define PWM_1 D5

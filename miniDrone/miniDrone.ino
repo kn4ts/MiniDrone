@@ -22,7 +22,8 @@ static uint16_t alti ; // 高度を格納する変数
 
 static int mode = 0; // モードを保持するための変数
 
-static int uc[4] ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static int uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
+static int u0[4] ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
 static int* u ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
 /* 関数定義 */
@@ -149,32 +150,32 @@ void loop() {
         case 1:
           uc[0] = 10;
           uc[1] = 10;
-          uc[2] = 10;
-          uc[3] = 10;
+          uc[2] = 0;
+          uc[3] = 0;
           break;
         case 2:
+          uc[0] = 20;
+          uc[1] = 20;
+          uc[2] = 20;
+          uc[3] = 20;
+          break;
+        case 3:
           uc[0] = 30;
           uc[1] = 30;
           uc[2] = 30;
           uc[3] = 30;
           break;
-        case 3:
-          uc[0] = 50;
-          uc[1] = 50;
-          uc[2] = 50;
-          uc[3] = 50;
-          break;
         case 4:
           uc[0] = 80;
           uc[1] = 80;
-          uc[2] = 80;
-          uc[3] = 80;
+          uc[2] = 0;
+          uc[3] = 0;
           break;
         case 5:
           uc[0] = 100;
           uc[1] = 100;
-          uc[2] = 100;
-          uc[3] = 100;
+          uc[2] = 0;
+          uc[3] = 0;
           break;
         default:
           uc[0] = 0;
@@ -222,6 +223,12 @@ void loop() {
       }
     }
   }
+  uc[0] = 0; // 入力を初期化
+  uc[1] = 0;
+  uc[2] = 0;
+  uc[3] = 0;
+  u = driveActuator( &uc[0] ); // モータ止める
+
   printNoCentral(); // セントラル機器がないことをシリアルで表示
   delay(4000);
 }
