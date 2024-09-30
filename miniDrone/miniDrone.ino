@@ -72,13 +72,14 @@ void setup() {
   }
 
   // I2C接続のセンサの初期設定
-  if( !initSensorI2C() ){
+  /* if( !initSensorI2C() ){
     // 失敗したらエラー表示で止まる
     while(1){
       Serial.println("I2C sensor setup error!");
       delay(2000);
     };
-  }
+  } */
+ digitalWrite(LED_BUILTIN, HIGH);
 }
 
 /* メインループ */
@@ -165,7 +166,7 @@ void loop() {
         // フラグをおろす
         setTmToFFlag(false);
         // 測距センサ値を用いた高度の更新
-        updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
+        // updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
       }
     }
   }
