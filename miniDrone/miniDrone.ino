@@ -75,13 +75,13 @@ void setup() {
   }
 
   // I2C接続のセンサの初期設定
-  if( !initSensorI2C() ){
+  /*if( !initSensorI2C() ){
     // 失敗したらエラー表示で止まる
     while(1){
       Serial.println("I2C sensor setup error!");
       delay(2000);
     };
-  }
+  }*/
 
   // アクチュエータ（モータ）の初期設定
   setupPWMpin();
@@ -101,11 +101,11 @@ void loop() {
       if( true == temp ){ // 戻り値のチェック，trueなら指令として読み込む
         char cmd = getWrittenMessageHead() ; // 読み込んだ文字を取得
         switch (cmd){
-          case '1': // 受信文字が（char型の）'1'なら
-            mode = 1; // モードを1に変更
-            break;
           case '0': // 受信文字が（char型の）'0'なら
             mode = 0; // モードを0に変更
+            break;
+          case '1': // 受信文字が（char型の）'1'なら
+            mode = 1; // モードを1に変更
             break;
           case '2': // 受信文字が（char型の）'2'なら
             mode = 2; // モードを1に変更
@@ -118,6 +118,12 @@ void loop() {
             break;
           case '5': // 受信文字が（char型の）'2'なら
             mode = 5; // モードを1に変更
+            break;
+          case '6': // 受信文字が（char型の）'2'なら
+            mode = 6; // モードを1に変更
+            break;
+          case '7': // 受信文字が（char型の）'2'なら
+            mode = 7; // モードを1に変更
             break;
           default:
             break;
@@ -150,8 +156,8 @@ void loop() {
         case 1:
           uc[0] = 10;
           uc[1] = 10;
-          uc[2] = 0;
-          uc[3] = 0;
+          uc[2] = 10;
+          uc[3] = 10;
           break;
         case 2:
           uc[0] = 20;
@@ -160,22 +166,40 @@ void loop() {
           uc[3] = 20;
           break;
         case 3:
-          uc[0] = 30;
-          uc[1] = 30;
-          uc[2] = 30;
-          uc[3] = 30;
+          uc[0] = 40;
+          uc[1] = 40;
+          uc[2] = 40;
+          uc[3] = 40;
           break;
         case 4:
-          uc[0] = 80;
-          uc[1] = 80;
-          uc[2] = 0;
-          uc[3] = 0;
+          uc[0] = 70;
+          uc[1] = 70;
+          uc[2] = 70;
+          uc[3] = 70;
           break;
         case 5:
           uc[0] = 100;
           uc[1] = 100;
-          uc[2] = 0;
-          uc[3] = 0;
+          uc[2] = 100;
+          uc[3] = 100;
+          break;
+        case 6:
+          uc[0] = 130;
+          uc[1] = 130;
+          uc[2] = 130;
+          uc[3] = 130;
+          break;
+        case 7:
+          uc[0] = 160;
+          uc[1] = 160;
+          uc[2] = 160;
+          uc[3] = 160;
+          break;
+        case 8:
+          uc[0] = 200;
+          uc[1] = 200;
+          uc[2] = 200;
+          uc[3] = 200;
           break;
         default:
           uc[0] = 0;
@@ -219,7 +243,7 @@ void loop() {
         // フラグをおろす
         setTmToFFlag(false);
         // 測距センサ値を用いた高度の更新
-        updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
+        //updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
       }
     }
   }
