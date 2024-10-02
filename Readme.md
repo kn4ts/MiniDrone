@@ -3,7 +3,16 @@
 ## ハードウェア
 + Arduino nano 33 BLE ... BLEモジュールとIMUが搭載されたマイコン（[https://ssci.to/7667](https://ssci.to/7667)）
 + VL53L0X Time-of-Flight 距離センサモジュール ... ToF測距センサ（[https://ssci.to/2894](https://ssci.to/2894)）
-+ MOS FET？ ... モータ制御用のトランジスタ．2SK4019？（[https://eleshop.jp/shop/g/gECF311/](https://eleshop.jp/shop/g/gECF311/)）．
+
+### 電気回路の部品
++ FET ... モータ制御用のトランジスタ．
+    - 候補1）2SK4019（[https://eleshop.jp/shop/g/gECF311/](https://eleshop.jp/shop/g/gECF311/)）
+    - 候補2）2SK4017（[https://akizukidenshi.com/catalog/g/g107597/](https://akizukidenshi.com/catalog/g/g107597/)）
++ 抵抗 ... マイコン電流調整用．100Ω
++ 抵抗 ... プルダウン用．10kΩ
++ ダイオード ... フライバックダイオード．SB240LES（[https://akizukidenshi.com/catalog/g/g116419/](https://akizukidenshi.com/catalog/g/g116419/)）
++ コンデンサ ... パスコン用．セラミックコンデンサー 47μF16V（[https://akizukidenshi.com/catalog/g/g104917/](https://akizukidenshi.com/catalog/g/g104917/)）
++ レギュレータ ... マイコン電源用．3.3V出力ステップアップレギュレータ？（[https://ssci.to/8681](https://ssci.to/8681)）？
 
 ## 使用するライブラリ
 + `ArduinoBLE.h` ... BLE(Bluetooth Low Energy)を使用するためのライブラリ．
@@ -153,7 +162,9 @@ graph TD
     end
 ```
 
-## 動作確認環境
+## 電気回路の構成
+モータ1つ分の駆動系の回路を以下に示す．
+![回路図](./doc/circuit_one_motor.png)
 
 
 ## トラブルシュート
@@ -171,6 +182,9 @@ graph TD
 ### フォルダ構成は下記を参考にした  
 + https://qiita.com/somehiro/items/6a6d954be159b6a5fccd  
 + https://zenn.dev/skou/articles/7a49ca2f9f0fcc
+
+### 駆動系の電気回路は下記を参考にした
++ https://www.remma.net/?p=1341
 
 ### COMが認識されなくなる問題のトラブルシュート  
 + https://detail.chiebukuro.yahoo.co.jp/qa/question_detail/q11263532971
