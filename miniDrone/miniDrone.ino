@@ -6,6 +6,7 @@
 #include "src/inc/ControlTimer.h" // タイマー用のヘッダファイル
 #include "src/inc/IntegratedIMU.h"  // 内臓IMU用のヘッダファイル
 #include "src/inc/SensorI2C.h"  // I2C接続用のヘッダファイル
+#include "src/inc/Actuator.h" // アクチュエータ（PWM指令）のヘッダファイル
 
 // 物理ピン関係の変数
 #define STATE_DO D2 // 制御周期確認用のDOポート
@@ -20,6 +21,10 @@ static float* vec ;  // 姿勢を格納した配列のポインタ格納用変�
 static uint16_t alti ; // 高度を格納する変数
 
 static int mode = 0; // モードを保持するための変数
+
+static int uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
+static int u0[4] ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
+static int* u ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
@@ -70,13 +75,16 @@ void setup() {
   }
 
   // I2C接続のセンサの初期設定
-  if( !initSensorI2C() ){
+  /*if( !initSensorI2C() ){
     // 失敗したらエラー表示で止まる
     while(1){
       Serial.println("I2C sensor setup error!");
       delay(2000);
     };
-  }
+  }*/
+
+  // アクチュエータ（モータ）の初期設定
+  setupPWMpin();
 }
 
 /* メインループ */
@@ -93,11 +101,29 @@ void loop() {
       if( true == temp ){ // 戻り値のチェック，trueなら指令として読み込む
         char cmd = getWrittenMessageHead() ; // 読み込んだ文字を取得
         switch (cmd){
+          case '0': // 受信文字が（char型の）'0'なら
+            mode = 0; // モードを0に変更
+            break;
           case '1': // 受信文字が（char型の）'1'なら
             mode = 1; // モードを1に変更
             break;
-          case '0': // 受信文字が（char型の）'0'なら
-            mode = 0; // モードを0に変更
+          case '2': // 受信文字が（char型の）'2'なら
+            mode = 2; // モードを1に変更
+            break;
+          case '3': // 受信文字が（char型の）'2'なら
+            mode = 3; // モードを1に変更
+            break;
+          case '4': // 受信文字が（char型の）'2'なら
+            mode = 4; // モードを1に変更
+            break;
+          case '5': // 受信文字が（char型の）'2'なら
+            mode = 5; // モードを1に変更
+            break;
+          case '6': // 受信文字が（char型の）'2'なら
+            mode = 6; // モードを1に変更
+            break;
+          case '7': // 受信文字が（char型の）'2'なら
+            mode = 7; // モードを1に変更
             break;
           default:
             break;
@@ -119,10 +145,74 @@ void loop() {
         /*
           ここに制御則を実装する
         */
+        switch (mode)
+        {
+        case 0:
+          uc[0] = 0;
+          uc[1] = 0;
+          uc[2] = 0;
+          uc[3] = 0;
+          break;
+        case 1:
+          uc[0] = 10;
+          uc[1] = 10;
+          uc[2] = 10;
+          uc[3] = 10;
+          break;
+        case 2:
+          uc[0] = 20;
+          uc[1] = 20;
+          uc[2] = 20;
+          uc[3] = 20;
+          break;
+        case 3:
+          uc[0] = 40;
+          uc[1] = 40;
+          uc[2] = 40;
+          uc[3] = 40;
+          break;
+        case 4:
+          uc[0] = 70;
+          uc[1] = 70;
+          uc[2] = 70;
+          uc[3] = 70;
+          break;
+        case 5:
+          uc[0] = 100;
+          uc[1] = 100;
+          uc[2] = 100;
+          uc[3] = 100;
+          break;
+        case 6:
+          uc[0] = 130;
+          uc[1] = 130;
+          uc[2] = 130;
+          uc[3] = 130;
+          break;
+        case 7:
+          uc[0] = 160;
+          uc[1] = 160;
+          uc[2] = 160;
+          uc[3] = 160;
+          break;
+        case 8:
+          uc[0] = 200;
+          uc[1] = 200;
+          uc[2] = 200;
+          uc[3] = 200;
+          break;
+        default:
+          uc[0] = 0;
+          uc[1] = 0;
+          uc[2] = 0;
+          uc[3] = 0;
+          break;
+        }
 
         /*
           ここにアクチュエータ駆動のコードを実装する
         */
+        u = driveActuator( &uc[0] ); // 制御器出力でアクチュエータを駆動
 
         // デバッグ用DOポートをトグル -> 100Hz出ているか確認用
         toggleDO();
@@ -153,10 +243,16 @@ void loop() {
         // フラグをおろす
         setTmToFFlag(false);
         // 測距センサ値を用いた高度の更新
-        updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
+        //updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
       }
     }
   }
+  uc[0] = 0; // 入力を初期化
+  uc[1] = 0;
+  uc[2] = 0;
+  uc[3] = 0;
+  u = driveActuator( &uc[0] ); // モータ止める
+
   printNoCentral(); // セントラル機器がないことをシリアルで表示
   delay(4000);
 }
