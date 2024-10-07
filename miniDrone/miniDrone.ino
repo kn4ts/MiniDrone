@@ -75,13 +75,13 @@ void setup() {
   }
 
   // I2C接続のセンサの初期設定
-  /*if( !initSensorI2C() ){
+  if( !initSensorI2C() ){
     // 失敗したらエラー表示で止まる
     while(1){
       Serial.println("I2C sensor setup error!");
       delay(2000);
     };
-  }*/
+  }
 
   // アクチュエータ（モータ）の初期設定
   setupPWMpin();
@@ -255,7 +255,7 @@ void loop() {
         // フラグをおろす
         setTmToFFlag(false);
         // 測距センサ値を用いた高度の更新
-        //updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
+        updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
       }
     }
   }
@@ -263,6 +263,7 @@ void loop() {
   uc[1] = 0;
   uc[2] = 0;
   uc[3] = 0;
+  mode = 0;
   u = driveActuator( &uc[0] ); // モータ止める
 
   printNoCentral(); // セントラル機器がないことをシリアルで表示
