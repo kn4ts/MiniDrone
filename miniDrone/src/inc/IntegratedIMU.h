@@ -30,4 +30,8 @@
     // 姿勢角速度計算値のゲッタ関数
     float* getIMUAngularVelocity();
 
+    void setAttBias();
+    void setAnvBias();
+    float* getIMUAttitude_wo_b();
+    float* getIMUAngularVelocity_wo_b();
 #endif

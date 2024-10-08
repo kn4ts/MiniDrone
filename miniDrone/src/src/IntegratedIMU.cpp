@@ -16,22 +16,37 @@ static float imu_mg[3] ;   // 地磁気計測値 x, y, z 方向
 static float attitude[3] ;  // 姿勢角 roll, pitch, yaw
 static float angularvelocity[3]; // 姿勢角速度 roll, pitch, yaw
 
+// 物理量補正のための変数
+static float att_bias[3] ; // 姿勢角のバイアス
+static float anv_bias[3] ; // 姿勢角速度のバイアス
+
+// 物理量補正のための変数
+static float att[3] ; // 姿勢角（バイアス補正後）
+static float anv[3] ; // 姿勢角速度（バイアス補正後）
+
 // 相補フィルタ計算のための変数定義
 static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
 static float deltaTime ; // 時刻の差分を格納する変数
-
 //static const float alpha = 0.98; // 相補フィルタの係数
 static const float alpha = 0.95; // 相補フィルタの係数
 static const float alpha_mag = 0.95; // 相補フィルタの係数（ヨー方向）
 
 // 内臓IMUの初期化関数
 bool initIMU(){
-    bool state = true;
-    if (!IMU.begin()){
-        state = false;
-    }
+    bool state = true; // 戻り値の初期化
+
+    // バイアス値を0に初期化
+    att_bias[0] = 0;
+    att_bias[1] = 0;
+    att_bias[2] = 0;
+    anv_bias[0] = 0;
+    anv_bias[1] = 0;
+    anv_bias[2] = 0;
+
+    if (!IMU.begin()){ state = false; } // 初期化に失敗すると戻り値をfalseに設定
     return state;
 }
+
 
 // 相補フィルタを使った姿勢推定
 void updateIMUAttitudeVal(){
@@ -101,6 +116,32 @@ void updateIMUGyroscope(){
     if (IMU.gyroscopeAvailable()) {
         IMU.readGyroscope(imu_gy[0], imu_gy[1], imu_gy[2]);
     }
+}
+// 姿勢角の現在値をバイアス値にセットする関数
+void setAttBias(){
+    att_bias[0] = attitude[0];
+    att_bias[1] = attitude[1];
+    att_bias[2] = attitude[2];
+}
+// 姿勢角速度の現在値をバイアス値にセットする関数
+void setAnvBias(){
+    anv_bias[0] = angularvelocity[0];
+    anv_bias[1] = angularvelocity[1];
+    anv_bias[2] = angularvelocity[2];
+}
+// バイアス処理後の姿勢角のゲッタ
+float* getIMUAttitude_wo_b(){
+    att[0] = attitude[0] -att_bias[0];
+    att[1] = attitude[1] -att_bias[1];
+    att[2] = attitude[2] -att_bias[2];
+    return &att[0];
+}
+// バイアス処理後の姿勢角速度のゲッタ
+float* getIMUAngularVelocity_wo_b(){
+    anv[0] = angularvelocity[0] -anv_bias[0];
+    anv[1] = angularvelocity[1] -anv_bias[1];
+    anv[2] = angularvelocity[2] -anv_bias[2];
+    return &anv[0];
 }
 
 // 加速度計測値のゲッタ関数

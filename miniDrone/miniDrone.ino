@@ -18,12 +18,13 @@ static char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
 static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
-static float* avl ;  // 角速度を格納した配列のポインタ格納用変数
+static float* anv ;  // 角速度を格納した配列のポインタ格納用変数
 static uint16_t alt ; // 高度を格納する変数
 
 static float* mag ;
 
 static int mode = 0; // モードを保持するための変数
+static bool arm = false; // アーム状態を保持するための変数
 
 static int uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
 static int u0[4] ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
@@ -47,6 +48,12 @@ void toggleDO(){
   }else{
     digitalWrite( STATE_DO, LOW ); // DOピンをLOWに
   }
+}
+
+void calibrateSensors(){
+  setAttBias();
+  setAnvBias();
+  setAltBias();
 }
 
 /* セットアップ関数 */
@@ -90,6 +97,8 @@ void setup() {
 
   // アクチュエータ（モータ）の初期設定
   setupPWMpin();
+
+  // 変数初期化
 }
 
 /* メインループ */
@@ -136,6 +145,15 @@ void loop() {
           case '9': // 受信文字が（char型の）'9'なら
             mode = 9; // モードを9に変更
             break;
+          case 'c': // 受信文字が（char型の）'c'なら
+            calibrateSensors();
+            break;
+          case 'a': // 受信文字が（char型の）'a'なら
+            if(arm==false){
+              //initializeSensorVal();
+              arm = true; // モードを9に変更
+            }
+            break;
           default:
             break;
         }
@@ -149,12 +167,15 @@ void loop() {
         // IMUセンサ値を用いた姿勢角の更新
         updateIMUAttitudeVal();
         // IMUで計算した値を取得
-        att = getIMUAttitude(); // 姿勢を取得
-        avl = getIMUAngularVelocity(); // 角速度を取得
+        att = getIMUAttitude_wo_b(); // 姿勢を取得
+        anv = getIMUAngularVelocity_wo_b(); // 角速度を取得
+        //att = getIMUAttitude(); // 姿勢を取得
+        //anv = getIMUAngularVelocity(); // 角速度を取得
 
         mag = getIMUMag(); // 地磁気計測値を取得
         // 測距センサから届いている最新の高度を取得
-        alt = getAltitudeVal();
+        alt = getAltitudeVal_wo_b();
+        //alt = getAltitudeVal();
 
         /*
           ここに制御則を実装する
@@ -246,7 +267,7 @@ void loop() {
         unsigned long currentTime = millis();
 
         // BLE通信
-        genMsgBLE( currentTime, att, avl, alt ); // 送信メッセージ作成
+        genMsgBLE( currentTime, att, anv, alt ); // 送信メッセージ作成
         sendMessageBLE(msgBLE); // メッセージ送信
 
         // BLE通信の受信メッセージを確認
