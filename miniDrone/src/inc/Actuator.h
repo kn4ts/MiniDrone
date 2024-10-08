@@ -29,12 +29,13 @@
     // #define MIN_PWM_CCW 64    // CCW方向回転のPWMの最小値
 
     //#define MAX_PWM 200 // PWM の最大値（※注意※単一モータで過大なPWM値を使用するとFETが燃える？）→200くらいなら大丈夫そう
-    #define MAX_PWM 255 // PWM の最大値（※注意※単一モータで過大なPWM値を使用するとFETが燃える？）→255でも大丈夫そう
+    #define MAX_PWM 200 // PWM の最大値（※注意※単一モータで過大なPWM値を使用するとFETが燃える？）→255でも大丈夫そう
+    //#define MAX_PWM 255 // PWM の最大値（※注意※単一モータで過大なPWM値を使用するとFETが燃える？）→255でも大丈夫そう
 
     // 関数のプロトタイプ宣言
     void setupPWMpin();   // PWMピンの初期化関数
 
-    int* driveActuator( int* uc );
+    int* driveActuator( float* uc );
 
     int saturatePWM(int ui);
     void set_PWM_4ch(int u1, int u2, int u3, int u4);   // 4chのPWM出力設定
