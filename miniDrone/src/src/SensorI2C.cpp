@@ -50,6 +50,6 @@ uint16_t getAltitudeVal(){
   return dist;
 }
 // 高度計測値のゲッタ関数
-uint16_t getAltitudeVal_wo_b(){
-  return dist - dist_bias;
+float getAltitudeVal_wo_b(){
+  return (float)dist - (float)dist_bias;
 }

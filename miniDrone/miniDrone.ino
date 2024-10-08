@@ -8,6 +8,8 @@
 #include "src/inc/SensorI2C.h"  // I2C接続用のヘッダファイル
 #include "src/inc/Actuator.h" // アクチュエータ（PWM指令）のヘッダファイル
 
+#include "src/inc/Control.h" // 制御系のヘッダファイル
+
 // 物理ピン関係の変数
 #define STATE_DO D2 // 制御周期確認用のDOポート
 static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変数
@@ -19,25 +21,26 @@ static char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
 // 制御用変数定義
 static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
 static float* anv ;  // 角速度を格納した配列のポインタ格納用変数
-static uint16_t alt ; // 高度を格納する変数
+static float alt ; // 高度を格納する変数
 
 static float* mag ;
 
 static int mode = 0; // モードを保持するための変数
 static bool arm = false; // アーム状態を保持するための変数
 
-static int uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
-static int u0[4] ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
-static int* u ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static float u[4] ; // 計算した制御入力（PWM指令値）を格納する配列
+static float u0[4] ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
+static float* uc ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static int* up ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
-void genMsgBLE( unsigned long t, float* att, float* mag, uint16_t alt ){
+void genMsgBLE( unsigned long t, float* att, float* mag, float alt ){
 //void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
   //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
   sprintf(msgBLE,
-      "%d,A:%.3f,%.3f,%.3f,G:%.3f,H:%d,%d",
-      t, att[0], att[1], att[2], mag[2], alt, mode);
+      "%d,%.2f,%.2f,%.2f,%.2f,%d,%.1f,%d,%d",
+      t, att[0], att[1], att[2], uc[0], up[0], alt, mode, arm);
 }
 
 // 制御周期確認用のDO切り替え関数
@@ -145,8 +148,12 @@ void loop() {
           case '9': // 受信文字が（char型の）'9'なら
             mode = 9; // モードを9に変更
             break;
+          case 's': // 受信文字が（char型の）'s'なら
+            mode = 10; // モードを10に変更
+            break;
           case 'c': // 受信文字が（char型の）'c'なら
             calibrateSensors();
+            initializeController();
             break;
           case 'a': // 受信文字が（char型の）'a'なら
             if(arm==false){
@@ -155,6 +162,8 @@ void loop() {
             }
             break;
           default:
+              arm = false; // モードを9に変更
+              initializeController(); // コントローラをリセット
             break;
         }
       }
@@ -183,77 +192,39 @@ void loop() {
         switch (mode)
         {
         case 0: // mode が 0 なら
-          uc[0] = 0; // 全モータ停止
-          uc[1] = 0;
-          uc[2] = 0;
-          uc[3] = 0;
+          u[0] = 0; // 全モータ停止
+          u[1] = 0;
+          u[2] = 0;
+          u[3] = 0;
           break;
         case 1: // mode が 1 なら
-          uc[0] = 20; // モータ1をPWM値20で回す指令（制御入力1を20に設定）
-          uc[1] = 20; // モータ2をPWM値20で回す指令（制御入力2を20に設定）
-          uc[2] = 20; // モータ3をPWM値20で回す指令（制御入力3を20に設定）
-          uc[3] = 20; // モータ4をPWM値20で回す指令（制御入力4を20に設定）
+          u[0] = 20; // モータ1をPWM値20で回す指令（制御入力1を20に設定）
+          u[1] = 20; // モータ2をPWM値20で回す指令（制御入力2を20に設定）
+          u[2] = 20; // モータ3をPWM値20で回す指令（制御入力3を20に設定）
+          u[3] = 20; // モータ4をPWM値20で回す指令（制御入力4を20に設定）
           break;
-        case 2: // mode が 2 なら
-          uc[0] = 50;
-          uc[1] = 50;
-          uc[2] = 50;
-          uc[3] = 50;
+        case 10: // mode が 10 なら
+          uc = controller_demo( att, alt );
+          
           break;
-        case 3: // mode が 3 なら
-          uc[0] = 80;
-          uc[1] = 80;
-          uc[2] = 80;
-          uc[3] = 80;
-          break;
-        case 4: // mode が 4 なら
-          uc[0] = 110;
-          uc[1] = 110;
-          uc[2] = 110;
-          uc[3] = 110;
-          break;
-        case 5: // mode が 5 なら
-          uc[0] = 150;
-          uc[1] = 150;
-          uc[2] = 150;
-          uc[3] = 150;
-          break;
-        case 6: // mode が 6 なら
-          uc[0] = 180;
-          uc[1] = 180;
-          uc[2] = 180;
-          uc[3] = 180;
-          break;
-        case 7: // mode が 7 なら
-          uc[0] = 210;
-          uc[1] = 210;
-          uc[2] = 210;
-          uc[3] = 210;
-          break;
-        case 8: // mode が 8 なら
-          uc[0] = 240;
-          uc[1] = 240;
-          uc[2] = 240;
-          uc[3] = 240;
-          break;
-        case 9: // mode が 9 なら
-          uc[0] = 255; // PWM出力値の最大値は255
-          uc[1] = 255;
-          uc[2] = 255;
-          uc[3] = 255;
-          break;
-        default: // mode が 3 なら
-          uc[0] = 0;
-          uc[1] = 0;
-          uc[2] = 0;
-          uc[3] = 0;
+        default: // mode のデフォルト設定
+          u[0] = 0;
+          u[1] = 0;
+          u[2] = 0;
+          u[3] = 0;
           break;
         }
 
         /*
           ここにアクチュエータ駆動のコードを実装する
         */
-        u = driveActuator( &uc[0] ); // 制御器出力でアクチュエータを駆動
+        if( arm == true ){
+          if( mode == 10 ){
+            up = driveActuator( uc ); // 制御器出力でアクチュエータを駆動
+          }else{
+            up = driveActuator( &u[0] );
+          }
+        }
 
         // デバッグ用DOポートをトグル -> 100Hz出ているか確認用
         toggleDO();
@@ -286,14 +257,20 @@ void loop() {
         // 測距センサ値を用いた高度の更新
         updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
       }
+
+      if( arm == true ){
+        digitalWrite( LED_BUILTIN, HIGH);
+      }else{
+        digitalWrite( LED_BUILTIN, LOW);
+      }
     }
   }
-  uc[0] = 0; // 入力を初期化
-  uc[1] = 0;
-  uc[2] = 0;
-  uc[3] = 0;
+  u[0] = 0; // 入力を初期化
+  u[1] = 0;
+  u[2] = 0;
+  u[3] = 0;
   mode = 0; // モードをリセット
-  u = driveActuator( &uc[0] ); // モータ止める
+  up = driveActuator( &u[0] ); // モータ止める
 
   printNoCentral(); // セントラル機器がないことをシリアルで表示
   delay(4000);
