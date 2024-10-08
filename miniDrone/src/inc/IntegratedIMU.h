@@ -21,6 +21,13 @@
     // 加速度計測値のゲッタ関数
     float* getIMUAcc();
     // 角速度計測値のゲッタ関数
+    float* getIMUGyro();
+    // 地磁気計測値のゲッタ関数
+    float* getIMUMag();
+
+    // 姿勢計算値のゲッタ関数
     float* getIMUAttitude();
+    // 姿勢角速度計算値のゲッタ関数
+    float* getIMUAngularVelocity();
 
 #endif

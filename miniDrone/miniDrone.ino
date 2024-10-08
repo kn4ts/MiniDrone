@@ -17,8 +17,11 @@ static String rstr ;  // BLE受信文字列の宣言
 static char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
-static float* vec ;  // 姿勢を格納した配列のポインタ格納用変数
-static uint16_t alti ; // 高度を格納する変数
+static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
+static float* avl ;  // 角速度を格納した配列のポインタ格納用変数
+static uint16_t alt ; // 高度を格納する変数
+
+static float* mag ;
 
 static int mode = 0; // モードを保持するための変数
 
@@ -28,10 +31,12 @@ static int* u ; // 実際に印加した制御入力（PWM指令値）を格納�
 
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
-void genMsgBLE( unsigned long t, float* v, uint16_t alti ){
+void genMsgBLE( unsigned long t, float* att, float* mag, uint16_t alt ){
 //void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
   //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
-  sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d,%d", t, v[0], v[1], v[2], alti, mode);
+  sprintf(msgBLE,
+      "%d,A:%.3f,%.3f,%.3f,G:%.3f,H:%d,%d",
+      t, att[0], att[1], att[2], mag[2], alt, mode);
 }
 
 // 制御周期確認用のDO切り替え関数
@@ -143,10 +148,13 @@ void loop() {
 
         // IMUセンサ値を用いた姿勢角の更新
         updateIMUAttitudeVal();
-        // IMUで計算した姿勢を取得
-        vec = getIMUAttitude();
+        // IMUで計算した値を取得
+        att = getIMUAttitude(); // 姿勢を取得
+        avl = getIMUAngularVelocity(); // 角速度を取得
+
+        mag = getIMUMag(); // 地磁気計測値を取得
         // 測距センサから届いている最新の高度を取得
-        alti = getAltitudeVal();
+        alt = getAltitudeVal();
 
         /*
           ここに制御則を実装する
@@ -238,7 +246,7 @@ void loop() {
         unsigned long currentTime = millis();
 
         // BLE通信
-        genMsgBLE( currentTime, vec, alti ); // 送信メッセージ作成
+        genMsgBLE( currentTime, att, avl, alt ); // 送信メッセージ作成
         sendMessageBLE(msgBLE); // メッセージ送信
 
         // BLE通信の受信メッセージを確認
@@ -247,7 +255,7 @@ void loop() {
         // シリアル通信でメッセージ送信（デバッグ用）
         Serial.print(rcvMsg);
         Serial.print(", ");
-        Serial.println(alti);
+        Serial.println(alt);
       }
 
       // ToFセンサ用タイマー割り込みフラグがオンならif文の中へ
@@ -263,7 +271,7 @@ void loop() {
   uc[1] = 0;
   uc[2] = 0;
   uc[3] = 0;
-  mode = 0;
+  mode = 0; // モードをリセット
   u = driveActuator( &uc[0] ); // モータ止める
 
   printNoCentral(); // セントラル機器がないことをシリアルで表示
