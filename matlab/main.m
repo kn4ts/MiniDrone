@@ -9,7 +9,8 @@ OUTPUT_FOLDER = "./output/"; % データロガーの出力用フォルダを指�
 df = DataFile( OUTPUT_FOLDER ) % データロガークラスのインスタンス生成
 
 % BLE通信の設定
-ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
+%ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
+ID = "5BEE875C506D";
 mble = MatlabBLE( ID )	% BLE通信のインスタンス生成
 
 f = genCallbackFunction( df ); % BLE受信により起動させるコールバック関数を生成
@@ -26,18 +27,25 @@ for i=1:N
 	[ data, time, s ] = mble.getReadData();	% BLEの受信メッセージを取得
 
 	% 画面表示用の設定
-	str = s + ", " + char(data)+ ", " + time ;
+	str = i +": "+ s + ", " + char(data) ;
+	%str = s + ", " + char(data)+ ", " + time ;
 	disp(str);
 	
 	% ループ回数の半分を超えたところでメッセージ送信（テスト）
-	if( i>0.5*N )
-		mble.sendMessage('0');	% BLE通信でメッセージ送信
+	switch i
+		case 5	% キャリブレーション
+			mble.sendMessage('c');	% BLE通信でメッセージ送信
+		case 8 % アーム
+			mble.sendMessage('a');
+		case 10 % 制御開始
+			mble.sendMessage('s');
 	end
 
 	pause(0.5);	% 一時停止
 end
 
 unsubscribe(mble.chara_read)
+clear mble
 
 %=======================
 %	関数定義
@@ -54,7 +62,7 @@ function f = genCallbackFunction( df )
 		% データの通し番号をインクリメント
 		se.setVal( se.getVal() +1 );
 
-		%str = [ se.getVal(), ti.getVal(), char(da.getVal()) ];
+		%str = [ se.getVal(), ti.getVal(), charda.getVal()) ];
 		%str = [ se.getVal(), ti.getVal(), da.getVal() ];
 		%str = [ num2str(se.getVal()), ',', char(ti.getVal()), ',', char(da.getVal()) ];
 		str = [ num2str(se.getVal()), ',', char(ti.getVal()), ',', char(da.getVal()) ];
