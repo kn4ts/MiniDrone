@@ -53,6 +53,7 @@ void toggleDO(){
   }
 }
 
+// センサのキャリブレーション（センサ値のバイアス処理）関数
 void calibrateSensors(){
   setAttBias();
   setAnvBias();
