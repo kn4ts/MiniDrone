@@ -15,8 +15,11 @@ static float ref_alt = 10;
 
 // 制御器ゲイン
 static float alt_p = 1;
-static float alt_i = 1;
-static float alt_d = 0.01;
+static float alt_i = 2;
+//static float alt_d = 0.05;
+//static float alt_d = 0.1;
+//static float alt_d = 0.01;
+static float alt_d = 0.001;
 
 // 制御器の状態
 static float alt_e = 0;
