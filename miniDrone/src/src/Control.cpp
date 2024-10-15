@@ -11,21 +11,52 @@
 // static float ref_alt = 0;
 // static float ref_alt = 20;
 //static float ref_alt = 10;
-static float ref_alt = 10;
+static float ref_alt = 10;  // 高度目標値[mm]
+static float ref_rol = 0;   // ロール目標値[degree?]
+static float ref_pit = 0;   // ピッチ目標値[degree?]
+static float ref_yaw = 0;   // ヨー目標値[degree?]
 
-// 制御器ゲイン
-static float alt_p = 1;
-static float alt_i = 2;
+/* 制御器ゲイン */
+// 高度ゲイン
+static float alt_Kp = 1;
+static float alt_Ki = 2;
 //static float alt_d = 0.05;
 //static float alt_d = 0.1;
 //static float alt_d = 0.01;
-static float alt_d = 0.001;
+static float alt_Kd = 0.001;
+// ロール角度ゲイン
+static float rol_Kp = 1;
+static float rol_Ki = 1;
+static float rol_Kd = 0.001;
+// ピッチ角度ゲイン
+static float pit_Kp = 1;
+static float pit_Ki = 1;
+static float pit_Kd = 0.001;
 
-// 制御器の状態
-static float alt_e = 0;
-static float alt_ei = 0;
-static float alt_ed = 0;
-static float prev_alt = 0;
+
+/* 制御器の状態変数 */
+// 高度に関するもの
+static float alt_e = 0;     // 現在の誤差
+static float alt_ei = 0;    // 誤差の積分
+static float alt_ed = 0;    // 誤差の微分
+static float prev_alt = 0;  // 1ステップ前の高度
+// ロール角度に関するもの
+static float rol_e = 0;
+static float rol_ei = 0;
+static float rol_ed = 0;
+static float prev_rol = 0;
+// ピッチ角度に関するもの
+static float pit_e = 0;
+static float pit_ei = 0;
+static float pit_ed = 0;
+static float prev_pit = 0;
+// ヨー角度に関するもの
+static float yaw_e = 0;
+static float yaw_ei = 0;
+static float yaw_ed = 0;
+static float prev_yaw = 0;
+
+// 制御器出力
 static float uc[4]; // 制御器出力の配列
 
 // バイアス入力
@@ -34,6 +65,8 @@ static float u_bias = 10;
 // 制御器実装用の変数
 static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
 static float deltaTime ; // 時刻の差分を格納する変数
+
+static int8_t status = 0 ; // ステータス
 
 /* 関数定義 */
 // 制御器の実装例
@@ -44,20 +77,36 @@ float* controller_demo( float* y, uint16_t alt ){
     deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算
     prevTime = currTime; // 前回時刻を更新
 
-    // 信号の更新
+    /* 信号の更新 */ 
+    // 高度情報
     alt_ed = ( -(float)alt +prev_alt ) / deltaTime ; // 微分先行で計測値を数値微分
-    alt_e = ref_alt -(float)alt ;
-    alt_ei += alt_e * deltaTime ; // 誤差を積分
-    prev_alt = alt ;
+    alt_e = ref_alt -(float)alt ; // 誤差
+    alt_ei += alt_e * deltaTime ; // 誤差の積分
+    prev_alt = alt ; // 1ステップ前の誤差を更新
+    // ロール角度情報
+    rol_ed = ( -y[0] +prev_rol ) / deltaTime ; // 微分先行で計測値を数値微分
+    rol_e = ref_rol -y[1] ; // 誤差
+    rol_ei += rol_e * deltaTime ; // 誤差の積分
+    prev_rol = y[0] ; // 1ステップ前の誤差を更新
+    // ピッチ角度情報
+    pit_ed = ( -y[1] +prev_pit ) / deltaTime ; // 微分先行で計測値を数値微分
+    pit_e = ref_pit -y[1] ; // 誤差
+    pit_ei += pit_e * deltaTime ; // 誤差の積分
+    prev_pit = y[1] ; // 1ステップ前の誤差を更新
 
-    // 制御力の計算
-    float tau_roll = 0.0 ;
-    float tau_pitch = 0.0 ;
+    // ステータス（飛行状況）の判定・更新
+    if( status == 0 && alt > 6 ){
+        status = 1; // 離陸
+    }
+
+    // 要求制御力の計算
+    float tau_rol = rol_Kp * rol_e + rol_Ki * rol_ei + rol_Kd * rol_ed ; // ロール方向
+    float tau_pit = pit_Kp * pit_e + pit_Ki * pit_ei + pit_Kd * pit_ed ; // ピッチ方向
     float tau_yaw = 0.0 ;
-    float f_total = alt_p * alt_e + alt_i * alt_ei + alt_d * alt_ed ;
+    float f_total = alt_Kp * alt_e + alt_Ki * alt_ei + alt_Kd * alt_ed ; // 高度方向
 
     // ミキシング（分配）
-    allocator_demo( tau_roll, tau_pitch, tau_yaw, f_total );
+    allocator_demo( tau_rol, tau_pit, tau_yaw, f_total );
 
     return &uc[0];
 }
