@@ -153,8 +153,8 @@ void loop() {
             mode = 10; // モードを10に変更
             break;
           case 'c': // 受信文字が（char型の）'c'なら
-            calibrateSensors();
-            initializeController();
+            calibrateSensors();     // センサのバイアス値設定
+            initializeController(); // 制御器をリセット
             break;
           case 'a': // 受信文字が（char型の）'a'なら
             if(arm==false){
@@ -164,7 +164,7 @@ void loop() {
             break;
           default:
               arm = false; // モードを9に変更
-              initializeController(); // コントローラをリセット
+              initializeController(); // 制御器をリセット
             break;
         }
       }
