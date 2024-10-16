@@ -10,5 +10,11 @@
     
     float* controller_demo(float* y, uint16_t alt) ;
     void allocator_demo(float t_r, float t_p, float t_y, float f_t) ;
+
+    void setRollReference(float ref) ;
+    void setPitchReference(float ref) ;
+
+    float* getControlForceReq() ;
+
     void initializeController() ;
 #endif
