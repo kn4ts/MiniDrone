@@ -8,11 +8,11 @@ function output = showplot( depth )
 	% インデックスの指定
 	colm_time = 3 ; % マイコン時間[ms]
 	colm_atti = [ 4, 6 ]; % 姿勢角
-	colm_alti = 7; % 高度
-	colm_uc = [  8, 11 ]; % 制御器出力
-	colm_cf = [ 12, 15 ]; % 制御力
-	colm_mode = 16 ; % モード
-	colm_arm  = 17 ; % アーム状態
+	colm_alti = [ 7, 8 ]; % 高度とフィルタ後の高度
+	colm_uc = [  8+1, 11+1 ]; % 制御器出力
+	colm_cf = [ 12+1, 15+1 ]; % 制御力
+	colm_mode = 16+1 ; % モード
+	colm_arm  = 17+1 ; % アーム状態
  
 
 	folderPath = './output/shaped/'; % 参照データのフォルダの指定
