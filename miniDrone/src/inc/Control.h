@@ -48,6 +48,9 @@
     void setPitchReference(float ref) ; // ピッチ角指令値のセッタ
 
     float getAltitudeFiltered() ; // フィルタ処理後の高度のゲッタ
+    float getRollFiltered() ; // フィルタ処理後のロール角のゲッタ
+    float getPitchFiltered() ; // フィルタ処理後のピッチ角のゲッタ
+    float getYawFiltered() ; // フィルタ処理後のヨー角のゲッタ
     float* getControlForceReq() ; // 要求制御力のゲッタ
 
     void initializeController() ; // 制御器の初期化関数

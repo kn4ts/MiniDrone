@@ -98,7 +98,7 @@ float* controller_demo( float* y, float distance ){
     alt.filt_prev = alt.filt ; // 1ステップ前のフィルタ後高度を更新
     //
     // ロール角度情報
-    rol.filt = lowpassFilterRoll_demo( rol.filt_prev, y[0] ) ; // 高度計測値にローパスフィルタをかける
+    rol.filt = lowpassFilterRoll_demo( rol.filt_prev, y[0] ) ; // ロール角計測値にローパスフィルタをかける
     //
     //rol.e = ref_rol -y[0] ; // 現在の誤差
     rol.e = ref_rol -rol.filt ; // 現在の誤差
@@ -108,14 +108,24 @@ float* controller_demo( float* y, float distance ){
     rol.prev = rol.e ; // 1ステップ前の誤差を更新
     //
     // ピッチ角度情報
-    pit.filt = lowpassFilterPitch_demo( pit.filt_prev, y[1] ) ; // 高度計測値にローパスフィルタをかける
+    pit.filt = lowpassFilterPitch_demo( pit.filt_prev, y[1] ) ; // ピッチ角計測値にローパスフィルタをかける
     //
     //pit.e = ref_pit -y[1] ; // 誤差
     pit.e = ref_pit -pit.filt ; // 誤差
-    pit.ed = ( pit.e -pit.filt_prev ) / deltaTime ; // 微分先行で計測値を数値微分
+    pit.ed = ( pit.e -pit.filt_prev ) / deltaTime ; // 誤差の数値微分
     pit.ei += pit.e * deltaTime ; // 誤差の積分
     //
     pit.prev = pit.e ; // 1ステップ前の誤差を更新
+    //
+    // ヨー角度情報
+    yaw.filt = lowpassFilterYaw_demo( yaw.filt_prev, y[2] ) ; // ヨー角計測値にローパスフィルタをかける
+    //
+    //pit.e = ref_pit -y[1] ; // 誤差
+    yaw.e = ref_pit -y[2] ; // 誤差
+    yaw.ed = ( yaw.e -yaw.prev ) / deltaTime ; // 誤差を数値微分
+    yaw.ei += yaw.e * deltaTime ; // 誤差の積分
+    //
+    yaw.prev = yaw.e ; // 1ステップ前の誤差を更新
 
     // ステータス（飛行状況）の判定・更新
     if( status == 0 && distance > 6 ){
@@ -171,8 +181,11 @@ float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ){
     return yaw_filt_new;
 }
 
-// フィルタ処理後の高度のゲッタ関数
-float getAltitudeFiltered(){ return alt.filt; }
+// フィルタ処理後の値のゲッタ関数
+float getAltitudeFiltered(){ return alt.filt; } // 高度について
+float getRollFiltered(){ return rol.filt; } // ロール角について
+float getPitchFiltered(){ return pit.filt; } // ピッチ角について
+float getYawFiltered(){ return yaw.filt; } // ピッチ角について
 // 要求制御力のゲッタ関数
 float* getControlForceReq(){ return &cont_force[0]; } // 
 
