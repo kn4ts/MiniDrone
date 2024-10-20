@@ -19,10 +19,12 @@ static float ref_yaw = 0;   // ヨー目標値[degree?]
 /* 制御器ゲイン */
 // 高度ゲイン
 // 一番まし？
-//static float alt_Kp = 2;
-//static float alt_Ki = 2;
-//static float alt_Kd = 0.003;
-static AltGain altK = { 2, 1, 0.001 };
+// static float alt_Kp = 2;
+// static float alt_Ki = 2;
+// static float alt_Kd = 0.003;
+// static AltGain altK = { 2, 1, 0.001 };
+//static AltGain altK = { 1, 2, 0.0001 };
+static AltGain altK = { 1, 1, 0.0001 };
 //static float alt_Kp = 2;
 //static float alt_Ki = 2;
 //static float alt_d = 0.05;
@@ -30,12 +32,12 @@ static AltGain altK = { 2, 1, 0.001 };
 //static float alt_d = 0.01;
 //static float alt_Kd = 0.003;
 // ロール角度ゲイン
-static RollGain rolK = { 0, 0, 0 };
+static RollGain rolK = { 0.1, 0, 0.001 };
 //static float rol_Kp = 0.2;
 //static float rol_Ki = 0.01;
 //static float rol_Kd = 0.01;
 // ピッチ角度ゲイン
-static PitchGain pitK = { 0, 0, 0 };
+static PitchGain pitK = { 0.1, 0, 0.001 };
 //static float pit_Kp = 0.2;
 //static float pit_Ki = 0.01;
 //static float pit_Kd = 0.01;
@@ -55,9 +57,13 @@ static YawVariable yaw = { 0, 0, 0, 0, 0, 0};
 //static float alt_alpha = 0.95 ; // ローパスのゲイン
 //static float alt_alpha = 0.90 ; // ローパスのゲイン
 //static float alt_alpha = 0.85 ; // ローパスのゲイン
-// static float alt_alpha = 0.80 ; // ローパスのゲイン -> おとなしくなった？
+// static float alt_alpha = 0.80 ; // ローパスのゲイン -> おとなしくなった？ <- なってない
 // static float alt_alpha = 0.75 ; // ローパスのゲイン
-static LowpassFilterGain alpha = { 0.7, 0.8, 0.8, 0.8 };
+//static LowpassFilterGain alpha = { 0.7, 0.8, 0.8, 0.8 };
+//static LowpassFilterGain alpha = { 0.6, 0.8, 0.8, 0.8 };
+//static LowpassFilterGain alpha = { 0.5, 0.8, 0.8, 0.8 };
+//static LowpassFilterGain alpha = { 0.1, 0.2, 0.2, 0.2 }; // 高度かなりまし
+static LowpassFilterGain alpha = { 0.1, 0.3, 0.3, 0.3 }; // 
 //static float alt_alpha = 0.70 ; // ローパスのゲイン
 
 // 要求制御力
