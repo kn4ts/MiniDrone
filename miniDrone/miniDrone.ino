@@ -16,7 +16,7 @@ static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変�
 
 // BLE通信用変数
 static String rstr ;  // BLE受信文字列の宣言
-static char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
+static char msgBLE[100] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
 static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
@@ -41,19 +41,22 @@ static int cnt_pit = 0; // ピッチ角度指令値用
 
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
-void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf, float alt_f ){
+void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
+                float alt_f, float rol_f, float pit_f, float yaw_f ){
 //void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf ){
 //void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
   //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
   sprintf(msgBLE,
       "%d," // マイコン内時間[ms]
       "%.2f,%.2f,%.2f," // 姿勢角（ロール，ピッチ，ヨーの順）
+      "%.2f,%.2f,%.2f," // フィルタ後の姿勢角（ロール，ピッチ，ヨーの順）
       "%.2f,%.2f," // 高度[mm], 高度フィルタ値[mm]
       "%.1f,%.1f,%.1f,%.1f,"  // 制御器出力1~4
       "%.1f,%.1f,%.1f,%.1f,"  // 要求制御力(ロール，ピッチ，ヨー，総推力の順)
       "%d,%d", // モード，アーム状態
       t,
       att[0],att[1],att[2],
+      rol_f,pit_f,yaw_f,
       alt, alt_f,
       uc[0],uc[1],uc[2],uc[3],
       cf[0],cf[1],cf[2],cf[3],
@@ -185,6 +188,7 @@ void loop() {
           default:
               arm = false; // モードを9に変更
               initializeController(); // 制御器をリセット
+              u[0] = 0; u[1] = 0; u[2] = 0; u[3] = 0;
             break;
         }
       }
@@ -279,10 +283,14 @@ void loop() {
         // 制御器内部の情報を取得
         float* control_force = getControlForceReq(); // 制御力を取得
         float alt_fil = getAltitudeFiltered(); // フィルタ処理後の高度を取得
+        float rol_fil = getRollFiltered(); // フィルタ処理後のロール角を取得
+        float pit_fil = getPitchFiltered(); // フィルタ処理後のピッチ角を取得
+        float yaw_fil = getYawFiltered(); // フィルタ処理後のヨー角を取得
 
         // BLE通信の送信メッセージを作成
         //genMsgBLE( currentTime, att, anv, alt, control_force ); // 送信メッセージ作成
-        genMsgBLE( currentTime, att, anv, alt, control_force, alt_fil ); // 送信メッセージ作成
+        genMsgBLE( currentTime, att, anv, alt, control_force,
+                   alt_fil, rol_fil, pit_fil, yaw_fil ); // 送信メッセージ作成
         sendMessageBLE(msgBLE); // メッセージ送信
 
         // BLE通信の受信メッセージを確認
@@ -306,6 +314,7 @@ void loop() {
         digitalWrite( LED_BUILTIN, HIGH);
       }else{
         digitalWrite( LED_BUILTIN, LOW);
+        up = driveActuator( &u[0] ); // モータ止める
       }
     }
   }
