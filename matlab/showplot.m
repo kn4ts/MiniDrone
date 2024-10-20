@@ -8,11 +8,12 @@ function output = showplot( depth )
 	% インデックスの指定
 	colm_time = 3 ; % マイコン時間[ms]
 	colm_atti = [ 4, 6 ]; % 姿勢角
-	colm_alti = [ 7, 8 ]; % 高度とフィルタ後の高度
-	colm_uc = [  8+1, 11+1 ]; % 制御器出力
-	colm_cf = [ 12+1, 15+1 ]; % 制御力
-	colm_mode = 16+1 ; % モード
-	colm_arm  = 17+1 ; % アーム状態
+	colm_atti_f = [ 7, 9 ]; % 姿勢角
+	colm_alti = [ 10, 11 ]; % 高度とフィルタ後の高度
+	colm_uc = [  8+4, 11+4 ]; % 制御器出力
+	colm_cf = [ 12+4, 15+4 ]; % 制御力
+	colm_mode = 16+4 ; % モード
+	colm_arm  = 17+4 ; % アーム状態
  
 
 	folderPath = './output/shaped/'; % 参照データのフォルダの指定
@@ -37,15 +38,21 @@ function output = showplot( depth )
 	figure()
 	% プロット作成
 	subplot( 2,2,1 )
-	plot( time(index:end), data( index:end, colm_alti ) ); % 高度
-	legend(["altitude [mm]"])
+	hold on
+	plot( time(index:end), data( index:end, colm_alti(1) ) ); % 高度
+	plot( time(index:end), data( index:end, colm_alti(2) ) ); % 高度のフィルタ値
+	hold off
+	legend(["altitude [mm]", "altitude (filtered) [mm]"])
 	ylabel("Altitude [mm]")
 	box on, grid on
 	xlim([ time(index), time(end) ])
 	%
 	subplot( 2,2,3 )
+	hold on
 	plot( time(index:end), data( index:end, colm_atti(1):colm_atti(2) ) ); % 姿勢角
-	legend(["roll [deg]", "pitch [deg]", "yaw [deg]"])
+	plot( time(index:end), data( index:end, colm_atti_f(1):colm_atti_f(2) ), '--' ); % 姿勢角のフィルタ値
+	hold off
+	legend(["roll [deg]", "pitch [deg]", "yaw [deg]", "roll(filtered) [deg]", "pitch(filtered) [deg]", "yaw(filtered) [deg]"])
 	box on, grid on
 	xlim([ time(index), time(end) ])
 	ylabel("Attitude [deg]")
