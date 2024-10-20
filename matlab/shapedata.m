@@ -25,6 +25,8 @@ function out = shapedata()
 
 	disp("整形対象のファイル数 ... " + N)
 
+	colm_time = 3 ; % マイコン時間[ms]
+
     if( N > 0 )
 	    % ファイルの数の分ループ
 	    for i=1:N
@@ -44,13 +46,19 @@ function out = shapedata()
 			    Mat = zeros( Nx, Ny );
     
 			    % 各要素毎にループ
-			    for j = 1:Nx
-				    for k = 1:Ny
+			    for j = 1:Nx % 行方向
+				    for k = 1:Ny % 列方向
 					    % 数値に変換して行列に格納
 					    Mat(j,k) = str2num(strmat(j,k));
 				    end
 			    end
+
+			    % マイコン時間の差分を計算して追加
+			    Tm = diff( Mat(:,colm_time) );
+			    Tm( Nx, 1 ) = 0;
+			    Mat = [ Mat, Tm ];
     
+			    % 
 			    writematrix( Mat, ...
 				    string(folderPath) + string(shapedFolderPath) + fileNames(i), ...
 				    'WriteMode', 'overwrite' );
