@@ -22,12 +22,27 @@
               filt_prev; // フィルタ処理後かつ1ステップ前の信号
     }; 
 
+    struct RollGain{ float p, i, d; }; // ロール角制御器のゲイン
+    struct RollVariable{ float e, ei, ed, prev, filt, filt_prev; }; // ロール角制御器の内部変数
+
+    struct PitchGain{ float p, i, d; }; // ピッチ角制御器のゲイン
+    struct PitchVariable{ float e, ei, ed, prev, filt, filt_prev; }; // ピッチ角制御器の内部変数
+    
+    struct YawGain{ float p, i, d; }; // ヨー角制御器のゲイン
+    struct YawVariable{ float e, ei, ed, prev, filt, filt_prev; }; // ヨー角制御器の内部変数
+
+    // ローパスフィルタの係数
+    struct LowpassFilterGain{ float alt, rol, pit, yaw; } ;
+
     // 制御器の実装例
-    float* controller_demo(float* y, uint16_t distance);
+    float* controller_demo(float* y, float distance);
     // ミキシング則（分配器）の実装例
     void allocator_demo(float t_r, float t_p, float t_y, float f_t);
-    // 高度計測値のローパス処理の実装例
-    float lowpassFilterAltitude_demo( uint16_t dist, float alt_filt_prev );
+    // ローパス処理の実装例
+    float lowpassFilterAltitude_demo( float alt_filt_prev, float dist ); // 高度について
+    float lowpassFilterRoll_demo( float rol_filt_prev, float rol ); // ロール角について
+    float lowpassFilterPitch_demo( float pit_filt_prev, float pit ); // ピッチ角について
+    float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ); // ヨー角について
 
     void setRollReference(float ref) ; // ロール角指令値のセッタ
     void setPitchReference(float ref) ; // ピッチ角指令値のセッタ
