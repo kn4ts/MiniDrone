@@ -12,7 +12,7 @@ classdef DataFile
 		%  引数1： fn ... 保存ファイル名
 		function obj = DataFile( folder_name )
 			% フォーマット定義
-			fmt = 'yyyyMMdd_hhmmss';
+			fmt = 'yyyyMMdd_HHmmss';
 			% DataHandle型の変数を初期化
 			obj.fn = folder_name + "exp_" +string( datetime( 'now', 'Format', fmt ) ) +".csv";
 			%obj.fn = DataHandle( 0 ); 

@@ -16,7 +16,7 @@ static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変�
 
 // BLE通信用変数
 static String rstr ;  // BLE受信文字列の宣言
-static char msgBLE[50] ;  // BLEで送信するメッセージの格納変数
+static char msgBLE[100] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
 static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
@@ -33,14 +33,34 @@ static float u0[4] ; // すべての要素が0である制御入力（PWM指令�
 static float* uc ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 static int* up ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
+/* 指令用カウンタ */
+#define cnt_MAX 30 // [step] (1 step = about 10 ms)
+// static int cnt_alt = 0; // 高度指令値用（不要？）
+static int cnt_rol = 0; // ロール角度指令値用
+static int cnt_pit = 0; // ピッチ角度指令値用
+
 /* 関数定義 */
 // BLEで送信するメッセージを作成する関数
-void genMsgBLE( unsigned long t, float* att, float* mag, float alt ){
+void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
+                float alt_f, float rol_f, float pit_f, float yaw_f ){
+//void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf ){
 //void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
   //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
   sprintf(msgBLE,
-      "%d,%.2f,%.2f,%.2f,%.2f,%d,%.1f,%d,%d",
-      t, att[0], att[1], att[2], uc[0], up[0], alt, mode, arm);
+      "%d," // マイコン内時間[ms]
+      "%.2f,%.2f,%.2f," // 姿勢角（ロール，ピッチ，ヨーの順）
+      "%.2f,%.2f,%.2f," // フィルタ後の姿勢角（ロール，ピッチ，ヨーの順）
+      "%.2f,%.2f," // 高度[mm], 高度フィルタ値[mm]
+      "%.1f,%.1f,%.1f,%.1f,"  // 制御器出力1~4
+      "%.1f,%.1f,%.1f,%.1f,"  // 要求制御力(ロール，ピッチ，ヨー，総推力の順)
+      "%d,%d", // モード，アーム状態
+      t,
+      att[0],att[1],att[2],
+      rol_f,pit_f,yaw_f,
+      alt, alt_f,
+      uc[0],uc[1],uc[2],uc[3],
+      cf[0],cf[1],cf[2],cf[3],
+      mode, arm);
 }
 
 // 制御周期確認用のDO切り替え関数
@@ -53,6 +73,7 @@ void toggleDO(){
   }
 }
 
+// センサのキャリブレーション（センサ値のバイアス処理）関数
 void calibrateSensors(){
   setAttBias();
   setAnvBias();
@@ -124,36 +145,39 @@ void loop() {
           case '1': // 受信文字が（char型の）'1'なら
             mode = 1; // モードを1に変更
             break;
-          case '2': // 受信文字が（char型の）'2'なら
-            mode = 2; // モードを2に変更
+          case '2': // 受信文字が（char型の）'2'（後退）なら
+            cnt_pit = cnt_MAX; // カウンタを最大値へ
             break;
           case '3': // 受信文字が（char型の）'3'なら
             mode = 3; // モードを3に変更
             break;
-          case '4': // 受信文字が（char型の）'4'なら
-            mode = 4; // モードを4に変更
+          case '4': // 受信文字が（char型の）'4'（左）なら
+            cnt_rol = -cnt_MAX; // カウンタを最大値へ
             break;
           case '5': // 受信文字が（char型の）'5'なら
             mode = 5; // モードを5に変更
             break;
-          case '6': // 受信文字が（char型の）'6'なら
-            mode = 6; // モードを6に変更
+          case '6': // 受信文字が（char型の）'6'（右）なら
+            cnt_rol = cnt_MAX; // カウンタを最大値へ
             break;
           case '7': // 受信文字が（char型の）'7'なら
             mode = 7; // モードを7に変更
             break;
-          case '8': // 受信文字が（char型の）'8'なら
-            mode = 8; // モードを8に変更
+          case '8': // 受信文字が（char型の）'8'（前進）なら
+            cnt_pit = -cnt_MAX; // カウンタを-最大値へ
             break;
-          case '9': // 受信文字が（char型の）'9'なら
-            mode = 9; // モードを9に変更
+          /* case 'u': // 受信文字が（char型の）'u'（上昇）なら
+            cnt_alt = cnt_MAX; // カウンタを最大値へ
             break;
+          case 'd': // 受信文字が（char型の）'d'（下降）なら
+            cnt_alt = cnt_MAX; // カウンタを最大値へ
+            break; */
           case 's': // 受信文字が（char型の）'s'なら
             mode = 10; // モードを10に変更
             break;
           case 'c': // 受信文字が（char型の）'c'なら
-            calibrateSensors();
-            initializeController();
+            calibrateSensors();     // センサのバイアス値設定
+            initializeController(); // 制御器をリセット
             break;
           case 'a': // 受信文字が（char型の）'a'なら
             if(arm==false){
@@ -163,7 +187,8 @@ void loop() {
             break;
           default:
               arm = false; // モードを9に変更
-              initializeController(); // コントローラをリセット
+              initializeController(); // 制御器をリセット
+              u[0] = 0; u[1] = 0; u[2] = 0; u[3] = 0;
             break;
         }
       }
@@ -178,13 +203,31 @@ void loop() {
         // IMUで計算した値を取得
         att = getIMUAttitude_wo_b(); // 姿勢を取得
         anv = getIMUAngularVelocity_wo_b(); // 角速度を取得
-        //att = getIMUAttitude(); // 姿勢を取得
-        //anv = getIMUAngularVelocity(); // 角速度を取得
 
         mag = getIMUMag(); // 地磁気計測値を取得
         // 測距センサから届いている最新の高度を取得
         alt = getAltitudeVal_wo_b();
-        //alt = getAltitudeVal();
+
+        /*
+          指令値カウンタの確認・処理
+        */ 
+        // ロール角について
+        if( cnt_rol > 0 ){
+          setRollReference( 2 ); // ロール角目標値を＋方向へ
+          --cnt_rol ;
+        }else if( cnt_rol < 0 ){
+          setRollReference( -2 ); // ロール角目標値をー方向へ
+          ++cnt_rol ;
+        }else{ setRollReference( 0 ); }; // ロール角目標値を0へ
+        // ピッチ角について
+        if( cnt_pit > 0 ){
+          setPitchReference(  2 ); // ピッチ角目標値を＋方向へ
+          --cnt_pit ;
+        }else if( cnt_pit < 0 ){
+          setPitchReference( -2 ); // ピッチ角目標値をー方向へ
+          ++cnt_pit ;
+        }else{ setPitchReference( 0 ); }; // ピッチ角目標値を0へ
+
 
         /*
           ここに制御則を実装する
@@ -237,8 +280,17 @@ void loop() {
         // マイコンの中の時刻を取得
         unsigned long currentTime = millis();
 
-        // BLE通信
-        genMsgBLE( currentTime, att, anv, alt ); // 送信メッセージ作成
+        // 制御器内部の情報を取得
+        float* control_force = getControlForceReq(); // 制御力を取得
+        float alt_fil = getAltitudeFiltered(); // フィルタ処理後の高度を取得
+        float rol_fil = getRollFiltered(); // フィルタ処理後のロール角を取得
+        float pit_fil = getPitchFiltered(); // フィルタ処理後のピッチ角を取得
+        float yaw_fil = getYawFiltered(); // フィルタ処理後のヨー角を取得
+
+        // BLE通信の送信メッセージを作成
+        //genMsgBLE( currentTime, att, anv, alt, control_force ); // 送信メッセージ作成
+        genMsgBLE( currentTime, att, anv, alt, control_force,
+                   alt_fil, rol_fil, pit_fil, yaw_fil ); // 送信メッセージ作成
         sendMessageBLE(msgBLE); // メッセージ送信
 
         // BLE通信の受信メッセージを確認
@@ -262,6 +314,7 @@ void loop() {
         digitalWrite( LED_BUILTIN, HIGH);
       }else{
         digitalWrite( LED_BUILTIN, LOW);
+        up = driveActuator( &u[0] ); // モータ止める
       }
     }
   }

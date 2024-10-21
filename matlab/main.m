@@ -44,6 +44,9 @@ for i=1:N
 	pause(0.5);	% 一時停止
 end
 
+mble.sendMessage('d');
+pause(0.5);	% 一時停止
+
 unsubscribe(mble.chara_read)
 clear mble
 

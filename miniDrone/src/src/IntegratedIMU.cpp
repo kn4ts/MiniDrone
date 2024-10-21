@@ -55,7 +55,7 @@ void updateIMUAttitudeVal(){
     if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
 
         currTime = millis(); // 現在時刻の取得
-        deltaTime = 0.001 * (currTime - prevTime) ; // 前回からの差分時間を計算
+        deltaTime = min( 0.001 * (currTime - prevTime), 0.02) ; // 前回からの差分時間を計算
         prevTime = currTime; // 前回時刻を更新
 
         IMU.readAcceleration(imu_ac[0], imu_ac[1], imu_ac[2]); // 加速度計測値を取得
