@@ -28,10 +28,10 @@ static float* mag ;
 static int mode = 0; // モードを保持するための変数
 static bool arm = false; // アーム状態を保持するための変数
 
-static float u[4] ; // 計算した制御入力（PWM指令値）を格納する配列
-static float u0[4] ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
-static float* uc ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
-static int* up ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static float uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
+static float* uc_pointer ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static float u0[4] = {0,0,0,0} ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
+static int* up_pointer ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
 /* 指令用カウンタ */
 #define cnt_MAX 30 // [step] (1 step = about 10 ms)
@@ -40,6 +40,66 @@ static int cnt_rol = 0; // ロール角度指令値用
 static int cnt_pit = 0; // ピッチ角度指令値用
 
 /* 関数定義 */
+// ucの要素に4つの値をセットする関数
+float* setUc( float u1, float u2, float u3, float u4 ){
+  uc[0] = u1 ; uc[1] = u2 ; uc[2] = u3 ; uc[3] = u4;
+  return &uc[0];
+}
+void modeDetectionBLE(){
+  pollBLE(); // BLEスタックの更新
+  if( true == checkWrittenMessage() ){ // 書き込まれたメッセージを確認し，trueなら指令として読み込む
+    char cmd = getWrittenMessageHead() ; // 読み込んだ先頭文字を取得
+    switch (cmd){
+      // 前進・後退（ピッチ角）
+      case '8': // 受信文字が（char型の）'8'（前進）なら
+        cnt_pit = -cnt_MAX; break; // カウンタを-最大値へ
+      case '2': // 受信文字が（char型の）'2'（後退）なら
+        cnt_pit =  cnt_MAX; break; // カウンタを最大値へ
+      // 左・右（ロール角）
+      case '4': // 受信文字が（char型の）'4'（左）なら
+        cnt_rol = -cnt_MAX; break; // カウンタを最大値へ
+      case '6': // 受信文字が（char型の）'6'（右）なら
+        cnt_rol =  cnt_MAX; break; // カウンタを最大値へ
+
+      case '0': // 受信文字が（char型の）'0'なら
+        mode = 0; // モードを0に変更
+        break;
+      case '1': // 受信文字が（char型の）'1'なら
+        mode = 1; // モードを1に変更
+        break;
+      case '3': // 受信文字が（char型の）'3'なら
+        mode = 3; // モードを3に変更
+        break;
+      case '5': // 受信文字が（char型の）'5'なら
+        mode = 5; // モードを5に変更
+        break;
+      case '7': // 受信文字が（char型の）'7'なら
+        mode = 7; // モードを7に変更
+        break;
+      /* case 'u': // 受信文字が（char型の）'u'（上昇）なら
+        cnt_alt = cnt_MAX; // カウンタを最大値へ
+        break;
+      case 'd': // 受信文字が（char型の）'d'（下降）なら
+        cnt_alt = cnt_MAX; // カウンタを最大値へ
+        break; */
+      case 's': // 受信文字が（char型の）'s'なら
+        mode = 10; // モードを10に変更
+        break;
+      case 'c': // 受信文字が（char型の）'c'なら
+        calibrateSensors();     // センサのバイアス値設定
+        initializeController(); // 制御器をリセット
+        break;
+      case 'a': // 受信文字が（char型の）'a'ならarm
+        arm = true; break;
+      default:
+        arm = false; // disarm
+        initializeController(); // 制御器をリセット
+        uc_pointer = setUc( 0, 0, 0, 0 );
+        break;
+    }
+  }
+}
+//
 // BLEで送信するメッセージを作成する関数
 void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
                 float alt_f, float rol_f, float pit_f, float yaw_f ){
@@ -74,11 +134,7 @@ void toggleDO(){
 }
 
 // センサのキャリブレーション（センサ値のバイアス処理）関数
-void calibrateSensors(){
-  setAttBias();
-  setAnvBias();
-  setAltBias();
-}
+void calibrateSensors(){ setAttBias(); setAnvBias(); setAltBias(); }
 
 /* セットアップ関数 */
 void setup() {
@@ -134,77 +190,21 @@ void loop() {
     while ( centralStillConnected() ){  // セントラルが接続されている間ループ
 
       // BLE通信の指令の受信・解釈
-      pollBLE(); // BLEスタックの更新
-      bool temp = checkWrittenMessage(); // 書き込まれたメッセージを確認
-      if( true == temp ){ // 戻り値のチェック，trueなら指令として読み込む
-        char cmd = getWrittenMessageHead() ; // 読み込んだ文字を取得
-        switch (cmd){
-          case '0': // 受信文字が（char型の）'0'なら
-            mode = 0; // モードを0に変更
-            break;
-          case '1': // 受信文字が（char型の）'1'なら
-            mode = 1; // モードを1に変更
-            break;
-          case '2': // 受信文字が（char型の）'2'（後退）なら
-            cnt_pit = cnt_MAX; // カウンタを最大値へ
-            break;
-          case '3': // 受信文字が（char型の）'3'なら
-            mode = 3; // モードを3に変更
-            break;
-          case '4': // 受信文字が（char型の）'4'（左）なら
-            cnt_rol = -cnt_MAX; // カウンタを最大値へ
-            break;
-          case '5': // 受信文字が（char型の）'5'なら
-            mode = 5; // モードを5に変更
-            break;
-          case '6': // 受信文字が（char型の）'6'（右）なら
-            cnt_rol = cnt_MAX; // カウンタを最大値へ
-            break;
-          case '7': // 受信文字が（char型の）'7'なら
-            mode = 7; // モードを7に変更
-            break;
-          case '8': // 受信文字が（char型の）'8'（前進）なら
-            cnt_pit = -cnt_MAX; // カウンタを-最大値へ
-            break;
-          /* case 'u': // 受信文字が（char型の）'u'（上昇）なら
-            cnt_alt = cnt_MAX; // カウンタを最大値へ
-            break;
-          case 'd': // 受信文字が（char型の）'d'（下降）なら
-            cnt_alt = cnt_MAX; // カウンタを最大値へ
-            break; */
-          case 's': // 受信文字が（char型の）'s'なら
-            mode = 10; // モードを10に変更
-            break;
-          case 'c': // 受信文字が（char型の）'c'なら
-            calibrateSensors();     // センサのバイアス値設定
-            initializeController(); // 制御器をリセット
-            break;
-          case 'a': // 受信文字が（char型の）'a'なら
-            if(arm==false){
-              //initializeSensorVal();
-              arm = true; // モードを9に変更
-            }
-            break;
-          default:
-              arm = false; // モードを9に変更
-              initializeController(); // 制御器をリセット
-              u[0] = 0; u[1] = 0; u[2] = 0; u[3] = 0;
-            break;
-        }
-      }
+      modeDetectionBLE();
 
-      // 制御用タイマー割り込みフラグがオンならif文の中へ
+      /* -------------------------------
+         制御周期タイマー処理のはじまり
+      ------------------------------- */
       if ( getTmConFlag() ){
-        // フラグをおろす
-        setTmConFlag(false);
+        setTmConFlag(false); // フラグをおろす
 
         // IMUセンサ値を用いた姿勢角の更新
         updateIMUAttitudeVal();
         // IMUで計算した値を取得
         att = getIMUAttitude_wo_b(); // 姿勢を取得
         anv = getIMUAngularVelocity_wo_b(); // 角速度を取得
-
-        mag = getIMUMag(); // 地磁気計測値を取得
+        // 地磁気計測値を取得
+        mag = getIMUMag(); 
         // 測距センサから届いている最新の高度を取得
         alt = getAltitudeVal_wo_b();
 
@@ -228,52 +228,38 @@ void loop() {
           ++cnt_pit ;
         }else{ setPitchReference( 0 ); }; // ピッチ角目標値を0へ
 
-
         /*
           ここに制御則を実装する
         */
-        switch (mode)
-        {
+        switch (mode){
         case 0: // mode が 0 なら
-          u[0] = 0; // 全モータ停止
-          u[1] = 0;
-          u[2] = 0;
-          u[3] = 0;
-          break;
+          uc_pointer = setUc( 0, 0, 0, 0 ); break;
         case 1: // mode が 1 なら
-          u[0] = 20; // モータ1をPWM値20で回す指令（制御入力1を20に設定）
-          u[1] = 20; // モータ2をPWM値20で回す指令（制御入力2を20に設定）
-          u[2] = 20; // モータ3をPWM値20で回す指令（制御入力3を20に設定）
-          u[3] = 20; // モータ4をPWM値20で回す指令（制御入力4を20に設定）
-          break;
+          uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全モータをPWM値20で回す指令
         case 10: // mode が 10 なら
-          uc = controller_demo( att, alt );
-          
+          uc_pointer = controller_demo( att, alt ); // 制御則を使用
           break;
         default: // mode のデフォルト設定
-          u[0] = 0;
-          u[1] = 0;
-          u[2] = 0;
-          u[3] = 0;
-          break;
+          uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全入力を0に
         }
 
-        /*
-          ここにアクチュエータ駆動のコードを実装する
-        */
+        // アクチュエータを駆動する
         if( arm == true ){
-          if( mode == 10 ){
-            up = driveActuator( uc ); // 制御器出力でアクチュエータを駆動
-          }else{
-            up = driveActuator( &u[0] );
-          }
+          up_pointer = driveActuator( uc_pointer ); // 制御器出力でアクチュエータを駆動
+        }else{
+          up_pointer = driveActuator( &u0[0] ); // 入力0で駆動
         }
 
         // デバッグ用DOポートをトグル -> 100Hz出ているか確認用
         toggleDO();
       }
+      /* -------------------------------
+         制御周期タイマー処理ここまで
+      ------------------------------- */
 
-      // BLE通信用タイマー割り込みフラグがオンならif文の中へ
+      /* -------------------------------
+         BLE通信用タイマー処理のはじまり
+      ------------------------------- */
       if ( getTmBleFlag() ){ 
         setTmBleFlag(false); // タイマー割り込みフラグをおろす
 
@@ -288,7 +274,6 @@ void loop() {
         float yaw_fil = getYawFiltered(); // フィルタ処理後のヨー角を取得
 
         // BLE通信の送信メッセージを作成
-        //genMsgBLE( currentTime, att, anv, alt, control_force ); // 送信メッセージ作成
         genMsgBLE( currentTime, att, anv, alt, control_force,
                    alt_fil, rol_fil, pit_fil, yaw_fil ); // 送信メッセージ作成
         sendMessageBLE(msgBLE); // メッセージ送信
@@ -301,29 +286,37 @@ void loop() {
         Serial.print(", ");
         Serial.println(alt);
       }
+      /* -------------------------------
+         BLE通信用タイマー処理ここまで
+      ------------------------------- */
 
-      // ToFセンサ用タイマー割り込みフラグがオンならif文の中へ
+      /* -------------------------------
+         ToFセンサ用タイマー処理のはじまり
+      ------------------------------- */
       if ( getTmToFFlag() ){
-        // フラグをおろす
-        setTmToFFlag(false);
+        setTmToFFlag(false); // フラグをおろす
         // 測距センサ値を用いた高度の更新
-        updateAltitudeVal(); // 注意：測定値が準備できていないとブロックする
+        // 注意：測定値が準備できていないとブロックする
+        updateAltitudeVal();
       }
+      /* -------------------------------
+         ToFセンサ用タイマー処理ここまで
+      ------------------------------- */
 
+      // arm状態のインジケータをコントロール
       if( arm == true ){
         digitalWrite( LED_BUILTIN, HIGH);
       }else{
         digitalWrite( LED_BUILTIN, LOW);
-        up = driveActuator( &u[0] ); // モータ止める
+        up_pointer = driveActuator( &u0[0] ); // モータ止める
       }
     }
   }
-  u[0] = 0; // 入力を初期化
-  u[1] = 0;
-  u[2] = 0;
-  u[3] = 0;
+
+  uc_pointer = setUc( 0, 0, 0, 0 ); // 入力を初期化
+  arm = false;
   mode = 0; // モードをリセット
-  up = driveActuator( &u[0] ); // モータ止める
+  up_pointer = driveActuator( &u0[0] ); // モータ止める
 
   printNoCentral(); // セントラル機器がないことをシリアルで表示
   delay(4000);
