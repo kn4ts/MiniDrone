@@ -16,7 +16,7 @@ static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変�
 
 // BLE通信用変数
 static String rstr ;  // BLE受信文字列の宣言
-static char msgBLE[100] ;  // BLEで送信するメッセージの格納変数
+static char msgBLE[192] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
 static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
@@ -30,6 +30,7 @@ static bool arm = false; // アーム状態を保持するための変数
 
 static float uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
 static float* uc_pointer ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+//static float* u_cont ; // 計算した制御入力（PWM指令値）を格納する配列
 static float u0[4] = {0,0,0,0} ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
 static int* up_pointer ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 
@@ -84,6 +85,7 @@ void modeDetectionBLE(){
         break; */
       case 's': // 受信文字が（char型の）'s'なら
         mode = 10; // モードを10に変更
+        setAltitudeReference(20);
         break;
       case 'c': // 受信文字が（char型の）'c'なら
         calibrateSensors();     // センサのバイアス値設定
@@ -102,7 +104,8 @@ void modeDetectionBLE(){
 //
 // BLEで送信するメッセージを作成する関数
 void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
-                float alt_f, float rol_f, float pit_f, float yaw_f ){
+                float alt_f, float rol_f, float pit_f, float yaw_f,
+                float ref_a, float ref_r, float ref_p ){
 //void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf ){
 //void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
   //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
@@ -113,6 +116,7 @@ void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
       "%.2f,%.2f," // 高度[mm], 高度フィルタ値[mm]
       "%.1f,%.1f,%.1f,%.1f,"  // 制御器出力1~4
       "%.1f,%.1f,%.1f,%.1f,"  // 要求制御力(ロール，ピッチ，ヨー，総推力の順)
+      "%.1f,%1f,%1f," // 高度指令値，ロール指令値，ピッチ指令値
       "%d,%d", // モード，アーム状態
       t,
       att[0],att[1],att[2],
@@ -120,6 +124,7 @@ void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
       alt, alt_f,
       uc[0],uc[1],uc[2],uc[3],
       cf[0],cf[1],cf[2],cf[3],
+      ref_a,ref_r,ref_p,
       mode, arm);
 }
 
@@ -238,6 +243,10 @@ void loop() {
           uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全モータをPWM値20で回す指令
         case 10: // mode が 10 なら
           uc_pointer = controller_demo( att, alt ); // 制御則を使用
+          uc[0] = uc_pointer[0];
+          uc[1] = uc_pointer[1];
+          uc[2] = uc_pointer[2];
+          uc[3] = uc_pointer[3];
           break;
         default: // mode のデフォルト設定
           uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全入力を0に
@@ -272,10 +281,14 @@ void loop() {
         float rol_fil = getRollFiltered(); // フィルタ処理後のロール角を取得
         float pit_fil = getPitchFiltered(); // フィルタ処理後のピッチ角を取得
         float yaw_fil = getYawFiltered(); // フィルタ処理後のヨー角を取得
+        float ref_alt = getAltitudeReference(); // 高度指令値を取得
+        float ref_rol = getRollReference(); // ロール角指令値を取得
+        float ref_pit = getPitchReference(); // ピッチ角指令値を取得
 
         // BLE通信の送信メッセージを作成
         genMsgBLE( currentTime, att, anv, alt, control_force,
-                   alt_fil, rol_fil, pit_fil, yaw_fil ); // 送信メッセージ作成
+                   alt_fil, rol_fil, pit_fil, yaw_fil,
+                   ref_alt, ref_rol, ref_pit ); // 送信メッセージ作成
         sendMessageBLE(msgBLE); // メッセージ送信
 
         // BLE通信の受信メッセージを確認
