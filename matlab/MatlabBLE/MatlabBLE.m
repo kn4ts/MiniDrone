@@ -1,7 +1,7 @@
 %% ==============================================
-%%  Mtlab BLE のクラス定義
+%%  Matlab BLE のクラス定義
 %%				2024/07/12
-%% 				KAWAGUCHI Natsuki
+%% 				K.N
 %% ==============================================
 classdef MatlabBLE
 	properties
@@ -12,13 +12,13 @@ classdef MatlabBLE
 
 		data	% データハンドル（参照渡し対応）
 		time	% データハンドル（参照渡し対応）
-		snum	% データハンドル
+		snum	% データハンドル（参照渡し対応）
 	end
 	methods
-		% H10センサのコンストラクタメソッド
+		% BLEクラスのコンストラクタメソッド
 		function obj = MatlabBLE( name ) 
 
-			% H10センサの接続部分
+			% BLEデバイスへの接続部分
 			for i=1:obj.N_max
 				disp("Connecting to -> " + name)
 				% センサへの接続を試行
@@ -55,8 +55,8 @@ classdef MatlabBLE
 					"d2e5cbb1-7f7e-4d3d-93f6-792d7e0f70db" );	
 			%	% 「デバイスからの通知」にコールバック関数を関連付ける
 			%	% 　デバイスからの通知...デバイスがメッセージを書き込んだらPCに通知が来る機能
-				obj.chara_read.DataAvailableFcn = @(src,evt) MatlabBLE.callback(src, evt, ...
-					obj.data, obj.time, obj.snum );
+				% obj.chara_read.DataAvailableFcn = @(src,evt) MatlabBLE.callback(src, evt, ...
+				% 	obj.data, obj.time, obj.snum );
 			else
 				disp("       ... Sensor was not found")
 			end

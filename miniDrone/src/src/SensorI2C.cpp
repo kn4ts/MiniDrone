@@ -10,6 +10,7 @@
 // ToFセンサ（測距センサ）のインスタンス生成
 static VL53L0X senToF;
 static uint16_t dist = 0; // 距離計測値の格納用変数
+static uint16_t dist_bias = 0; // 距離計測値のバイアス値格納用変数
 
 // BLEの初期設定関数
 bool initSensorI2C(){
@@ -41,7 +42,14 @@ void updateAltitudeVal(){
   }
 }
 
+void setAltBias(){
+  dist_bias = getAltitudeVal();
+}
 // 高度計測値のゲッタ関数
 uint16_t getAltitudeVal(){
   return dist;
+}
+// 高度計測値のゲッタ関数
+float getAltitudeVal_wo_b(){
+  return (float)dist - (float)dist_bias;
 }

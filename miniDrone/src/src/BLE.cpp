@@ -10,7 +10,7 @@
 // BLEの（カスタム）サービスを宣言（固有のUUIDを使う）
 static BLEService myS( SERVICE_UUID );
 // BLEの（カスタム）キャラクタリスティックを宣言（固有のUUIDを使う）
-static BLECharacteristic myC1(CHARACTERISTIC_UUID1, BLERead | BLENotify, 50); // 読み取り属性
+static BLECharacteristic myC1(CHARACTERISTIC_UUID1, BLERead | BLENotify, 140); // 読み取り属性
 static BLECharacteristic myC2(CHARACTERISTIC_UUID2, BLEWrite, 20); // 書き込み属性
 
 // セントラル（接続先）のインスタンスを生成
