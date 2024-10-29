@@ -16,6 +16,7 @@ void printHello(){
     Serial.println("Hello");
 }
 
-void printNoCentral(){
-    Serial.println("No central device");
+void printNoCentral(String str){
+    Serial.print("No central device, Bluetooth MAC:");
+    Serial.println(str);
 }
