@@ -332,6 +332,6 @@ void loop() {
   mode = 0; // モードをリセット
   up_pointer = driveActuator( &u0[0] ); // モータ止める
 
-  printNoCentral(); // セントラル機器がないことをシリアルで表示
+  printNoCentral( getBLEAddress() ); // セントラル機器がないことをシリアルで表示
   delay(4000);
 }
