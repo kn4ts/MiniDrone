@@ -15,6 +15,6 @@
     // "Hello"というメッセージを送る関数
     void printHello();
     // "No central"というメッセージを送る関数
-    void printNoCentral();
+    void printNoCentral(String str);
 
 #endif
