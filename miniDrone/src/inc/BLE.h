@@ -35,6 +35,9 @@
     bool isConnectedToPeripheral();
     bool centralStillConnected();
 
+    // セントラルのアドレスのゲッタ
+    String getBLEAddress();
+
     // セントラル側から書き込まれたメッセージを確認する関数
     bool checkWrittenMessage();
     // 書き込まれたメッセージのゲッタ関数

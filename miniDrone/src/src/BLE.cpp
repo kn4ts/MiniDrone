@@ -117,3 +117,7 @@ bool checkWrittenMessage(){
 char getWrittenMessageHead(){
   return writtenMsgHead;
 }
+
+String getBLEAddress(){
+  return BLE.address();
+}

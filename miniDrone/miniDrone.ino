@@ -15,37 +15,40 @@
 static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変数
 
 // BLE通信用変数
-static String rstr ;  // BLE受信文字列の宣言
-static char msgBLE[192] ;  // BLEで送信するメッセージの格納変数
+static char msgSendBLE[192] ;  // BLEで送信するメッセージの格納変数
 
 // 制御用変数定義
 static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
 static float* anv ;  // 角速度を格納した配列のポインタ格納用変数
-static float alt ; // 高度を格納する変数
+static float alt ;   // 高度を格納する変数
 
-static float* mag ;
+static float* mag ;  // 地磁気センサの計測値を格納した配列のポインタ格納用変数
+
+static float* uc_pointer ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static int* up_pointer ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
+static float uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
+static float u0[4] = {0,0,0,0} ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
 
 static int mode = 0; // モードを保持するための変数
 static bool arm = false; // アーム状態を保持するための変数
 
-static float uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
-static float* uc_pointer ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
-//static float* u_cont ; // 計算した制御入力（PWM指令値）を格納する配列
-static float u0[4] = {0,0,0,0} ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
-static int* up_pointer ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
-
-/* 指令用カウンタ */
+/* 参照値指令用カウンタ */
 #define cnt_MAX 30 // [step] (1 step = about 10 ms)
-// static int cnt_alt = 0; // 高度指令値用（不要？）
-static int cnt_rol = 0; // ロール角度指令値用
-static int cnt_pit = 0; // ピッチ角度指令値用
+#define ref_ANGLE 2 // [deg] 角度の目標値の絶対値
 
-/* 関数定義 */
-// ucの要素に4つの値をセットする関数
+// static int cnt_alt = 0; // 高度指令値用（不要？）
+static int cnt_rol = 0; // ロール角度指令値用カウンタ
+static int cnt_pit = 0; // ピッチ角度指令値用カウンタ
+
+/*
+  関数定義 
+*/
+// 制御入力配列（uc）の要素に4つの値をセットする関数
 float* setUc( float u1, float u2, float u3, float u4 ){
   uc[0] = u1 ; uc[1] = u2 ; uc[2] = u3 ; uc[3] = u4;
   return &uc[0];
 }
+// BLE通信からの指令を読み取り・解釈する関数
 void modeDetectionBLE(){
   pollBLE(); // BLEスタックの更新
   if( true == checkWrittenMessage() ){ // 書き込まれたメッセージを確認し，trueなら指令として読み込む
@@ -85,38 +88,38 @@ void modeDetectionBLE(){
         break; */
       case 's': // 受信文字が（char型の）'s'なら
         mode = 10; // モードを10に変更
-        setAltitudeReference(20);
+        setAltitudeReference(20); // 高度目標値をセット
         break;
       case 'c': // 受信文字が（char型の）'c'なら
         calibrateSensors();     // センサのバイアス値設定
         initializeController(); // 制御器をリセット
         break;
       case 'a': // 受信文字が（char型の）'a'ならarm
-        arm = true; break;
+        arm = true;
+        initializeController(); // 制御器をリセット
+        break;
       default:
         arm = false; // disarm
         initializeController(); // 制御器をリセット
-        uc_pointer = setUc( 0, 0, 0, 0 );
+        uc_pointer = setUc( 0, 0, 0, 0 ); // 制御器出力をすべて0に
         break;
     }
   }
 }
 //
 // BLEで送信するメッセージを作成する関数
-void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
+void setMsgSendBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
                 float alt_f, float rol_f, float pit_f, float yaw_f,
                 float ref_a, float ref_r, float ref_p ){
-//void genMsgBLE( unsigned long t, float* att, float* mag, float alt, float* cf ){
-//void genMsgBLE( unsigned long t, float x, float y, float z, uint16_t alti ){
-  //sprintf(msgBLE, "%d,%.3f,%.3f,%.3f,%d", t, v[0], v[1], v[2], alti);
-  sprintf(msgBLE,
+  //char msgBLE[192] ;  // BLEで送信するメッセージの格納変数
+  sprintf(msgSendBLE,
       "%d," // マイコン内時間[ms]
       "%.2f,%.2f,%.2f," // 姿勢角（ロール，ピッチ，ヨーの順）
       "%.2f,%.2f,%.2f," // フィルタ後の姿勢角（ロール，ピッチ，ヨーの順）
       "%.2f,%.2f," // 高度[mm], 高度フィルタ値[mm]
       "%.1f,%.1f,%.1f,%.1f,"  // 制御器出力1~4
       "%.1f,%.1f,%.1f,%.1f,"  // 要求制御力(ロール，ピッチ，ヨー，総推力の順)
-      "%.1f,%1f,%1f," // 高度指令値，ロール指令値，ピッチ指令値
+      "%.1f,%.1f,%.1f," // 高度指令値，ロール指令値，ピッチ指令値
       "%d,%d", // モード，アーム状態
       t,
       att[0],att[1],att[2],
@@ -141,7 +144,9 @@ void toggleDO(){
 // センサのキャリブレーション（センサ値のバイアス処理）関数
 void calibrateSensors(){ setAttBias(); setAnvBias(); setAltBias(); }
 
-/* セットアップ関数 */
+/*
+  セットアップ関数
+*/
 void setup() {
   // ピンモードの初期設定
   pinMode( LED_BUILTIN, OUTPUT ); // 内臓LEDの設定（デバッグ用）
@@ -219,18 +224,18 @@ void loop() {
         */ 
         // ロール角について
         if( cnt_rol > 0 ){
-          setRollReference( 2 ); // ロール角目標値を＋方向へ
+          setRollReference( ref_ANGLE ); // ロール角目標値を＋方向へ
           --cnt_rol ;
         }else if( cnt_rol < 0 ){
-          setRollReference( -2 ); // ロール角目標値をー方向へ
+          setRollReference( -ref_ANGLE ); // ロール角目標値をー方向へ
           ++cnt_rol ;
         }else{ setRollReference( 0 ); }; // ロール角目標値を0へ
         // ピッチ角について
         if( cnt_pit > 0 ){
-          setPitchReference(  2 ); // ピッチ角目標値を＋方向へ
+          setPitchReference( ref_ANGLE ); // ピッチ角目標値を＋方向へ
           --cnt_pit ;
         }else if( cnt_pit < 0 ){
-          setPitchReference( -2 ); // ピッチ角目標値をー方向へ
+          setPitchReference( -ref_ANGLE ); // ピッチ角目標値をー方向へ
           ++cnt_pit ;
         }else{ setPitchReference( 0 ); }; // ピッチ角目標値を0へ
 
@@ -250,7 +255,7 @@ void loop() {
           uc[3] = uc_pointer[3];
           break;
         default: // mode のデフォルト設定
-          uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全入力を0に
+          uc_pointer = setUc( 0, 0, 0, 0 ); break; // 全入力を0に
         }
 
         // アクチュエータを駆動する
@@ -277,7 +282,7 @@ void loop() {
         unsigned long currentTime = millis();
 
         // 制御器内部の情報を取得
-        float* control_force = getControlForceReq(); // 制御力を取得
+        float* control_force = getControlForceReq(); // 要求制御力を取得
         float alt_fil = getAltitudeFiltered(); // フィルタ処理後の高度を取得
         float rol_fil = getRollFiltered(); // フィルタ処理後のロール角を取得
         float pit_fil = getPitchFiltered(); // フィルタ処理後のピッチ角を取得
@@ -287,18 +292,16 @@ void loop() {
         float ref_pit = getPitchReference(); // ピッチ角指令値を取得
 
         // BLE通信の送信メッセージを作成
-        genMsgBLE( currentTime, att, anv, alt, control_force,
+        setMsgSendBLE( currentTime, att, anv, alt, control_force,
                    alt_fil, rol_fil, pit_fil, yaw_fil,
                    ref_alt, ref_rol, ref_pit ); // 送信メッセージ作成
-        sendMessageBLE(msgBLE); // メッセージ送信
+        sendMessageBLE(msgSendBLE); // メッセージ送信
 
         // BLE通信の受信メッセージを確認
-        char rcvMsg = getWrittenMessageHead(); // 1文字のメッセージを取得
+        char msgRecvBLE = getWrittenMessageHead(); // 1文字のメッセージを取得
 
         // シリアル通信でメッセージ送信（デバッグ用）
-        Serial.print(rcvMsg);
-        Serial.print(", ");
-        Serial.println(alt);
+        Serial.print(msgRecvBLE); Serial.print(", "); Serial.println(alt);
       }
       /* -------------------------------
          BLE通信用タイマー処理ここまで
@@ -332,6 +335,6 @@ void loop() {
   mode = 0; // モードをリセット
   up_pointer = driveActuator( &u0[0] ); // モータ止める
 
-  printNoCentral(); // セントラル機器がないことをシリアルで表示
+  printNoCentral( getBLEAddress() ); // セントラル機器がないことをシリアルで表示
   delay(4000);
 }
