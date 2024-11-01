@@ -60,9 +60,9 @@ static YawVariable yaw = { 0, 0, 0, 0, 0, 0}; // ヨー角度に関するもの
 static LowpassFilterGain alpha = { 0.1, 0.15, 0.15, 0.15 }; // 高度，ロール，ピッチ，ヨーの順
 
 // 要求制御力
-static float cont_force[4] ; // 要求制御力をまとめる配列
+static float cont_force[4] = { 0, 0, 0, 0} ; // 要求制御力をまとめる配列
 // 制御器出力
-static float uc[4]; // 制御器出力の配列
+static float uc[4] = { 0, 0, 0, 0}; // 制御器出力の配列
 // バイアス入力
 static float u_bias[4] = {10,10,15,15};
 

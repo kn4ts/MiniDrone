@@ -26,7 +26,7 @@ static float* mag ;  // 地磁気センサの計測値を格納した配列の�
 
 static float* uc_pointer ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
 static int* up_pointer ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
-static float uc[4] ; // 計算した制御入力（PWM指令値）を格納する配列
+static float uc[4] = {0,0,0,0} ; // 計算した制御入力（PWM指令値）を格納する配列
 static float u0[4] = {0,0,0,0} ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
 
 static int mode = 0; // モードを保持するための変数
