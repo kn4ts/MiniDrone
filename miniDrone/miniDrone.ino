@@ -34,7 +34,7 @@ static bool arm = false; // アーム状態を保持するための変数
 
 /* 参照値指令用カウンタ */
 #define cnt_MAX 30 // [step] (1 step = about 10 ms)
-#define ref_ANGLE 2 // [deg] 角度の目標値の絶対値
+#define ref_ANGLE 20 // [deg] 角度の目標値の絶対値
 
 // static int cnt_alt = 0; // 高度指令値用（不要？）
 static int cnt_rol = 0; // ロール角度指令値用カウンタ
@@ -175,7 +175,7 @@ void setup() {
       delay(2000);
     };
   }
-  /* ToFセンサを接続しているときはコメントを外してください
+  // ToFセンサを接続しているときはコメントを外してください
   // I2C接続のセンサの初期設定
   if( !initSensorI2C() ){
     // 失敗したらエラー表示で止まる
@@ -184,7 +184,6 @@ void setup() {
       delay(2000);
     };
   }
-  */
 
   // アクチュエータ（モータ）の初期設定
   setupPWMpin();
@@ -314,7 +313,7 @@ void loop() {
         setTmToFFlag(false); // フラグをおろす
         // 測距センサ値を用いた高度の更新
         // 注意：測定値が準備できていないとブロックする
-        //updateAltitudeVal();
+        updateAltitudeVal();
       }
       /* -------------------------------
          ToFセンサ用タイマー処理ここまで
