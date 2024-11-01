@@ -36,7 +36,21 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 		app.setReadFlag(0); % フラグおろす
 		keyPressed = app.getReadChara() % 押されたキーを取得
 
-		if keyPressed ~= "" break; end
+		% 押されたキーに応じた指令送信
+		switch keyPressed
+			case 'downarrow'
+				cmd = '2'; % 後退指令
+			case 'uparrow'
+				cmd = '8'; % 前進指令
+			case 'leftarrow'
+				cmd = '4'; % 左移動指令
+			case 'rightarrow'
+				cmd = '6'; % 右移動指令
+			otherwise
+				break;	% それ以外ならループ抜ける
+		end
+
+		mble.sendMessage( cmd );	% BLE通信でメッセージ送信
 	end
 
 	% タイマー間隔で実行する関数
