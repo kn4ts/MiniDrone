@@ -1,3 +1,4 @@
+%function out = shapedata()
 function out = shapedata()
 	folderPath = './output/'; % 整形元データのフォルダの指定
 	shapedFolderPath = 'shaped/';	% 出力先フォルダの指定
@@ -25,7 +26,8 @@ function out = shapedata()
 
 	disp("整形対象のファイル数 ... " + N)
 
-	colm_time = 3 ; % マイコン時間[ms]
+	colm_time_PC = 3 ; % PC時間[ms]
+	colm_time = 4 ; % マイコン時間[ms]
 
     if( N > 0 )
 	    % ファイルの数の分ループ
@@ -54,6 +56,11 @@ function out = shapedata()
 			    end
 
 			    % マイコン時間の差分を計算して追加
+			    Tm_PC = diff( Mat(:,colm_time_PC) );
+			    Tm_PC( Nx, 1 ) = 0;
+			    Mat = [ Mat, Tm_PC ];
+
+			    % マイコン時間の差分を計算して追加
 			    Tm = diff( Mat(:,colm_time) );
 			    Tm( Nx, 1 ) = 0;
 			    Mat = [ Mat, Tm ];
@@ -71,5 +78,6 @@ function out = shapedata()
 	%out = fileNames ;
 	%out = readcell(string(folderPath)+fileNames(13)) ;
 	%out = readcell(string(folderPath)+fileNames(13)) ;
-	out = Mat;
+	%out = Mat;
+	out = N ;
 end
