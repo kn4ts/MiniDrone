@@ -10,9 +10,14 @@ classdef MatlabBLE
 		chara_send	% 特性
 		N_max = 5 % 最大接続試行回数の定義
 
+		baseline % 基準時刻
+
 		data	% データハンドル（参照渡し対応）
 		time	% データハンドル（参照渡し対応）
+		time_e	% データハンドル（参照渡し対応）
 		snum	% データハンドル（参照渡し対応）
+
+		isReading % 読み込み中のフラグ
 	end
 	methods
 		% BLEクラスのコンストラクタメソッド
@@ -43,7 +48,11 @@ classdef MatlabBLE
 			% センサのデータ格納用ハンドルの初期化
 			obj.data = DataHandle( 0 );
 			obj.time = DataHandle( obj.getDateTimeString() );
+			obj.time_e = DataHandle( "0" );
 			obj.snum = DataHandle( 0 );
+
+			obj.isReading = DataHandle( false ) ; % 読み込みフラグの初期化
+			obj.baseline = DataHandle( datetime('now')); % 基準時間を取得
 
 			if ~isempty( obj.dev )
 				% デバイスの特性（キャラクタリスティック）を操作するためのインスタンスを生成
@@ -68,7 +77,11 @@ classdef MatlabBLE
 		%	se = obj.dh.se ;
 		%end
 		function sendMessage( obj, str )
-			write( obj.chara_send, uint8(str) );
+			try
+				write( obj.chara_send, uint8(str) );
+			catch ME
+				disp( "BLE send error" );
+			end
 		end
 		% 読み込み関数関数
 		function [ data, time, snum ] = getReadData( obj )
@@ -77,6 +90,11 @@ classdef MatlabBLE
 			snum = obj.snum.getVal() ;
 		end
 
+		function elapsedTime = getElapsedTimeString( obj )
+			et = milliseconds( datetime - obj.baseline.getVal() );
+			%elapsedTime = string( et );
+			elapsedTime = sprintf('%.0f', et );
+		end
 	end
 
 	methods (Static)

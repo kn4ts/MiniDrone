@@ -33,10 +33,28 @@ i = 0 ; % カウンタ
 while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 %for i=1:N
 	if app.getReadFlag() > 0
-		app.setReadFlag(0); % フラグおろす
-		keyPressed = app.getReadChara() % 押されたキーを取得
+		keyPressed = app.getReadChara(); % 押されたキーを取得
+		str = "key pressed ... " + keyPressed ;
+		disp( str );
 
-		if keyPressed ~= "" break; end
+		% 押されたキーに応じた指令送信
+		switch keyPressed
+			case 'downarrow'
+				cmd = '2'; % 後退指令
+			case 'uparrow'
+				cmd = '8'; % 前進指令
+			case 'leftarrow'
+				cmd = '4'; % 左移動指令
+			case 'rightarrow'
+				cmd = '6'; % 右移動指令
+			otherwise
+				break;	% それ以外ならループ抜ける
+		end
+
+		mble.sendMessage( cmd );	% BLE通信でメッセージ送信
+		cmd = '';
+		pause(0.1);	% 一時停止
+		app.setReadFlag(0); % フラグおろす
 	end
 
 	% タイマー間隔で実行する関数
@@ -84,16 +102,30 @@ function f = genCallbackFunction( mble, df )
 	% コールバック関数の定義
 	%function callback( src, evt, da, ti, se )
 	function callback( src, evt )
-		% 読み込んだデータを変数da（データ）に記録
-		mble.data.setVal( read( src ) );
-		% PC時刻を変数ti（タイム）に記録
-		mble.time.setVal( MatlabBLE.getDateTimeString() );
-		% データの通し番号をインクリメント
-		mble.snum.setVal( mble.snum.getVal() +1 );
+		if mble.isReading.getVal()
+			disp("BLE is reading");
+		else
+			mble.isReading.setVal(true); % 読み込みフラグを立てる
+			try
+				mble.data.setVal( read( src ) );
+				%msgBLE = read( src );
+			catch ME
+				disp("BLE recieve error");
+			end
+			% 読み込んだデータを変数da（データ）に記録
+			% PC時刻を変数ti（タイム）に記録
+			mble.time.setVal( MatlabBLE.getDateTimeString() );
+			% PC時刻での経過時間（ミリ秒）を変数ti_miに記録
+			mble.time_e.setVal( mble.getElapsedTimeString() );
+			% データの通し番号をインクリメント
+			mble.snum.setVal( mble.snum.getVal() +1 );
 
-		str = [ num2str(mble.snum.getVal()), ',', char(mble.time.getVal()), ',', char(mble.data.getVal()) ];
+			str = [ num2str(mble.snum.getVal()), ',', char(mble.time.getVal()), ',', char(mble.time_e.getVal()), ...
+				',', char(mble.data.getVal()) ];
 
-		df.outputDataStr( str );
+			df.outputDataStr( str ); % データをファイルに出力
+			mble.isReading.setVal(false);	% 読み込みフラグをおろす
+		end
 	end
 	f = @callback ;
 end
