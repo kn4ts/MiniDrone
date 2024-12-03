@@ -83,8 +83,10 @@ sequenceDiagram # シーケンス図の定義
 2つ目はBLE通信（地上局への送信）のタイミングをはかるタイマー`tmBLE`で，これは`Arduino nano 33 BLE`マイコンで試したところ10Hz程度が安定する最高の速度でしたので10Hz程度で使用しています．（もちろん理想は制御周期と同じ100Hzでの通信ですが...）  
 
 3つ目は機体高度を計測する測距センサから値を読みだす周期をはかるタイマー`tmToF`です．
-使用するセンサ（VL53L0Xユニット，I2C接続）の仕様上，計測値の精度を高めるために数十ms必要で，また計測値が準備できていないと読み出し指令がブロックされるとのことなので，少し長めに約33Hz(=30ms)の周期で読み込む時間管理をしています．
+使用するセンサ（VL53L0Xユニット，I2C接続）の仕様上，計測値の精度を高めるために数十ms必要で，また計測値が準備できていないと読み出し指令がブロックされる（※）とのことなので，少し長めに約33Hz(=30ms)の周期で読み込む時間管理をしています．
 （こちらも制御周期と同じ100Hzで読むことが理想なのですが）
+
+※【将来の課題】VL53L0XのGPIO1ピンはセンサが新しいデータを準備したときにトリガーされるそうなので，このピンをデジタルピンで監視しておけば回避できそうです．
 
 またマイコンへの地上局からの指令もBLE通信を使用することにしていますが，こちらは頻繁な通信をしないという前提で，とりあえず時間管理なしで運用しています．今後，地上局も含めた閉ループを高速周期で構成する必要がでてくれば，そのためのタイマーを実装する必要がありそうです．
 
@@ -246,7 +248,12 @@ graph TD
 + 電圧レギュレータ ... マイコン電源用．5V出力ステップアップ／ステップダウン電圧レギュレータ（[https://ssci.to/1168](https://ssci.to/1168)）
 
 ## 機体の設計
-[電気回路の設計・配置](#電気回路の構成)と合わせて，機体サイズや構造を決定する必要があります．
+機体のフレームは[電気回路の設計・配置](#電気回路の構成)と合わせて，サイズや構造を考えて設計します．
+具体的には，モータや基板の固定方法やセンサの配置，バッテリーの搭載位置などを検討する必要があります．
+また機体の中心からみて重量の偏りがない方が，制御設計や飛行特性が扱いやすいものになりそうです．
+
+[（参考）機体フレームのSTLデータ](./hardware/Frame/frame_A_ver3.stl)  
+![機体フレームの設計](./doc/frame_stl.png)
 
 ## 電気回路の構成
 以下に駆動系・測距センサ・電圧レギュレータを含めた全体の回路図を示します．
@@ -258,6 +265,9 @@ graph TD
 
 こちらの回路図をもとに実体配線図を作成し，基板上に部品を配置してください．
 回路や実体配線図の製作については，[fritzing](https://fritzing.org/)や[PasS](http://uaubn.g2.xrea.com/pass/)，Eagleなどを使用すると便利です．
+
+[（参考）回路図データ](./circuit/fritzing/circuit_ver1.fzz)  
+![実体配線図の一例](./doc/circuit_fritzing.png)
 
 # ドローン制御系の基本構成
 ドローンの姿勢（ロール，ピッチ．ヨー）角と高度を制御するための制御系のブロック線図の概要を以下に示します．
@@ -289,8 +299,49 @@ graph TD
 なお，これら3つをまとめて制御器と呼ぶ場合もあります．
 
 # ドローン制御則の実装
-wip
+`miniDrone.ino`の制御周期のタイミングにおける具体的な計算の流れを以下のシーケンス図で説明します．
 
+```mermaid
+sequenceDiagram # シーケンス図の定義
+    autonumber # 信号に番号をつける
+
+    # 各要素の定義
+    participant Main as 制御周期における処理 <br>（miniDrone.inoの中）
+    participant Class as 
+
+    opt IMU計測値の更新・取得
+        Note right of Class: IntegratedIMU.cpp
+        Main ->> Class : updateIMUAttitudeVal() <br> （姿勢値の更新指令）
+        Class ->> Main : ATTITUDE = getIMUAttitude_wo_b() <br> （バイアス値抜きの姿勢を取得）
+        Class ->> Main : ANG_VEL = getIMUAngularVelocity_wo_b() <br> （バイアス値抜きの姿勢角速度を取得）
+        Class ->> Main : MAG = getIMUMag() <br> （地磁気センサの値を取得） 
+    end
+
+    opt 高度計測値の取得
+        Note right of Class: SencorI2C.cpp
+        Class ->> Main : ALTITUDE = getAltitudeVal_wo_b() <br> （バイアス値抜きの高度を取得）
+    end
+
+    opt 姿勢・高度制御則の計算例
+        Note right of Class: Control.cpp <br> （構成例）
+        Main ->> Class : set{Roll,Pitch}Reference( REF ) <br> （姿勢角の参照値をセット）
+        opt 制御器の計算 
+        Main -> Class : PWMs = controller_demo( ATTITUDE, ALTITUDE ) <br> （フィードバック信号である姿勢，高度を引数として渡す）
+            Note over Class : フィルタ計算
+            Note over Class : 制御則計算
+            Note over Class : 分配器計算
+        Class ->> Main : PWMs = controller_demo( ATTITUDE, ALTITUDE ) <br> （計算結果のPWM信号値の配列の先頭ポインタを返す）
+        end
+    end
+
+    alt Arm状態なら
+        Note right of Class: Actuator.cpp
+        Main ->> Class : REAL_PWMs = driveActuator( PWMs ) <br> （PWM指令値を使ってロータを駆動，<br> 飽和後のPWMsを返す）
+    else Disarm状態なら
+        Main ->> Class : REAL_PWMs = driveActuator( PWM_ZEROs ) <br> （0の入力を使ってロータを駆動（つまり停止），<br> 飽和後のPWMsを返す）
+    end
+
+```
 ---
 ---
 
