@@ -144,6 +144,7 @@ void toggleDO(){
 // センサのキャリブレーション（センサ値のバイアス処理）関数
 void calibrateSensors(){ setAttBias(); setAnvBias(); setAltBias(); }
 
+
 /*
   セットアップ関数
 */
@@ -172,23 +173,22 @@ void setup() {
     // 失敗したらエラー表示で止まる
     while(1){
       Serial.println("IMU setup error!");
-      delay(2000);
+      digitalWrite( LED_BUILTIN, HIGH );
+      delay(500);
+      digitalWrite( LED_BUILTIN, LOW );
+      delay(500);
     };
   }
   // ToFセンサを接続しているときはコメントを外してください
   // I2C接続のセンサの初期設定
   if( !initSensorI2C() ){
-    // 失敗したらエラー表示で止まる
-    while(1){
-      Serial.println("I2C sensor setup error!");
-      delay(2000);
-    };
+    // 失敗したらエラー表示
+    Serial.println("I2C sensor setup error!");
+    delay(2000);
   }
 
   // アクチュエータ（モータ）の初期設定
   setupPWMpin();
-
-  // 変数初期化
 }
 
 /* メインループ */
@@ -215,8 +215,15 @@ void loop() {
         anv = getIMUAngularVelocity_wo_b(); // 角速度を取得
         // 地磁気計測値を取得
         mag = getIMUMag(); 
+
         // 測距センサから届いている最新の高度を取得
-        alt = getAltitudeVal_wo_b();
+        if ( getToFFlag() ){
+          setToFFlag(false); // フラグをおろす
+
+          // 注意：測定値が準備できていないとブロックする
+          updateAltitudeVal();
+          alt = getAltitudeVal_wo_b();
+        }
 
         /*
           指令値カウンタの確認・処理
@@ -300,7 +307,7 @@ void loop() {
         char msgRecvBLE = getWrittenMessageHead(); // 1文字のメッセージを取得
 
         // シリアル通信でメッセージ送信（デバッグ用）
-        Serial.print(msgRecvBLE); Serial.print(", "); Serial.println(alt);
+        Serial.print(msgRecvBLE); Serial.print(", "); Serial.print(getToFFlag()); Serial.print(", "); Serial.println(alt);
       }
       /* -------------------------------
          BLE通信用タイマー処理ここまで
@@ -309,12 +316,16 @@ void loop() {
       /* -------------------------------
          ToFセンサ用タイマー処理のはじまり
       ------------------------------- */
-      if ( getTmToFFlag() ){
-        setTmToFFlag(false); // フラグをおろす
-        // 測距センサ値を用いた高度の更新
-        // 注意：測定値が準備できていないとブロックする
-        updateAltitudeVal();
-      }
+      // if ( getFlagI2C() ){
+      // //  setFlagI2C(false); // フラグをおろす
+      // //if ( getTmToFFlag() ){
+      // //  setTmToFFlag(false); // フラグをおろす
+      //   setFlagI2C(false); // フラグをおろす
+      //   // 測距センサ値を用いた高度の更新
+      //   // 注意：測定値が準備できていないとブロックする
+      //   updateAltitudeVal();
+      //   //Serial.println("I2C Interruption!");
+      // }
       /* -------------------------------
          ToFセンサ用タイマー処理ここまで
       ------------------------------- */

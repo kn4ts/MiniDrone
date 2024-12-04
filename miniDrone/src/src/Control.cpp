@@ -64,7 +64,7 @@ static float cont_force[4] = { 0, 0, 0, 0} ; // 要求制御力をまとめる�
 // 制御器出力
 static float uc[4] = { 0, 0, 0, 0}; // 制御器出力の配列
 // バイアス入力
-static float u_bias[4] = {10,10,15,15};
+static float u_bias[4] = {10,10,15,15}; // 試行錯誤
 
 // 制御器実装用の変数
 static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数

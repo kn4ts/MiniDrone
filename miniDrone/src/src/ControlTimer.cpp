@@ -10,17 +10,17 @@
 // Tickerオブジェクトを定義
 static mbed::Ticker tmCon; // 制御周期のタイマー
 static mbed::Ticker tmBle; // BLE通信用のタイマー
-static mbed::Ticker tmToF; // 測距センサ用のタイマー
+//static mbed::Ticker tmToF; // 測距センサ用のタイマー
 
 // タイマーフラグ変数の宣言
 static bool tmConFlag = false;
 static bool tmBleFlag = false;
-static bool tmToFFlag = false;
+//static bool tmToFFlag = false;
 
 // タイマー周期の定義 [s]
 static const float TsCon = 0.01 ;
 static const float TsBle = 0.1 ; // 100msが最短？
-static const float TsToF = 0.03 ;
+//static const float TsToF = 0.03 ;
 
 // 制御用割り込み関数
 void onTimerCon() {
@@ -31,10 +31,11 @@ void onTimerCon() {
 void onTimerBle() {
   setTmBleFlag(true) ; // フラグを立てる
 }
-// ToFセンサ用割り込み関数
+/* // ToFセンサ用割り込み関数
 void onTimerToF() {
   setTmToFFlag(true) ; // フラグを立てる
 }
+*/
 
 // タイマーのセットアップ関数
 void setupTimer(){
@@ -43,7 +44,7 @@ void setupTimer(){
     //tm.attach(onTimer, 0.05);
     tmCon.attach(onTimerCon, TsCon);
     tmBle.attach(onTimerBle, TsBle);
-    tmToF.attach(onTimerToF, TsToF);
+    //tmToF.attach(onTimerToF, TsToF);
 }
 
 // フラグのゲッタ関数
@@ -53,9 +54,9 @@ bool getTmConFlag(){
 bool getTmBleFlag(){
   return tmBleFlag ;
 }
-bool getTmToFFlag(){
+/*bool getTmToFFlag(){
   return tmToFFlag ;
-}
+}*/
 
 // フラグのセッタ関数
 void setTmConFlag( bool flag ){
@@ -64,6 +65,6 @@ void setTmConFlag( bool flag ){
 void setTmBleFlag( bool flag ){
   tmBleFlag = flag ;
 }
-void setTmToFFlag( bool flag ){
+/*void setTmToFFlag( bool flag ){
   tmToFFlag = flag ;
-}
+}*/
