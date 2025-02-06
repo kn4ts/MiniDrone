@@ -99,6 +99,7 @@ void modeDetectionBLE(){
         initializeController(); // 制御器をリセット
         break;
       default:
+        mode = 0; // モード0に戻す
         arm = false; // disarm
         initializeController(); // 制御器をリセット
         uc_pointer = setUc( 0, 0, 0, 0 ); // 制御器出力をすべて0に
