@@ -93,6 +93,8 @@ close gcf; % 図の終了
 unsubscribe(mble.chara_read)
 clear mble
 
+shapedata()
+
 %=======================
 %	関数定義
 %=======================

@@ -55,15 +55,15 @@ function out = shapedata()
 				    end
 			    end
 
-			    % マイコン時間の差分を計算して追加
-			    Tm_PC = diff( Mat(:,colm_time_PC) );
-			    Tm_PC( Nx, 1 ) = 0;
-			    Mat = [ Mat, Tm_PC ];
+			    %% マイコン時間の差分を計算して追加
+			    %Tm_PC = diff( Mat(:,colm_time_PC) );
+			    %Tm_PC( Nx, 1 ) = 0;
+			    %Mat = [ Mat, Tm_PC ];
 
-			    % マイコン時間の差分を計算して追加
-			    Tm = diff( Mat(:,colm_time) );
-			    Tm( Nx, 1 ) = 0;
-			    Mat = [ Mat, Tm ];
+			    %% マイコン時間の差分を計算して追加
+			    %Tm = diff( Mat(:,colm_time) );
+			    %Tm( Nx, 1 ) = 0;
+			    %Mat = [ Mat, Tm ];
     
 			    % 
 			    writematrix( Mat, ...
