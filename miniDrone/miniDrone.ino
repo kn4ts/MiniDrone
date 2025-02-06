@@ -88,7 +88,7 @@ void modeDetectionBLE(){
         break; */
       case 's': // 受信文字が（char型の）'s'なら
         mode = 10; // モードを10に変更
-        setAltitudeReference(20); // 高度目標値をセット
+        setAltitudeReference(100); // 高度目標値をセット
         break;
       case 'c': // 受信文字が（char型の）'c'なら
         calibrateSensors();     // センサのバイアス値設定
