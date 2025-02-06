@@ -94,6 +94,7 @@ unsubscribe(mble.chara_read)
 clear mble
 
 shapedata()
+showplot()
 
 %=======================
 %	関数定義

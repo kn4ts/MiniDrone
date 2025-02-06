@@ -63,8 +63,13 @@ function output = showplot( depth )
 	%legend('Location', 'best');  % 自動で最適な位置に凡例を配置
 	ylabel("Altitude [mm]")
 	box on, grid on
+	time(end)
 	xlim([ time(index), time(end) ])
-	ax = gca;
+	if 200<max(data(index:end, colm_alti(1)))
+		yl = ylim;
+		ylim([ yl(1), 200 ])
+	end
+	
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
 	subplot( 3,2,3 )
@@ -156,7 +161,7 @@ function output = showplot( depth )
 	%%
 	figure()
 	% プロット作成
-	subplot( 2,3,1 )
+	subplot( 3,3,1 )
 	hold on
 	plot( time(index:end), data( index:end, colm_alti(1) ) ); % 高度
 	plot( time(index:end), data( index:end, colm_alti(2) ) ); % 高度のフィルタ値
@@ -167,10 +172,14 @@ function output = showplot( depth )
 	xlabel("Time (in FC) [s]")
 	box on, grid on
 	xlim([ time(index), time(end) ])
+	if 200<max(data(index:end, colm_alti(1)))
+		yl = ylim;
+		ylim([ yl(1), 200 ])
+	end
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
-	subplot( 2,3,4 )
+	subplot( 3,3,4 )
 	plot( time(index:end), data( index:end, colm_cf(1)+3 ) ); % 総推力
 	legend(["f_all"], 'Location', 'best')
 	box on, grid on
@@ -180,7 +189,7 @@ function output = showplot( depth )
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
-	subplot( 2,3,2 )
+	subplot( 3,3,2 )
 	hold on
 	plot( time(index:end), data( index:end, colm_atti(1):colm_atti(2)-1 ) ); % 姿勢角（ロール，ピッチ）
 	plot( time(index:end), data( index:end, colm_atti_f(1):colm_atti_f(2)-1 ), '--' ); % 姿勢角のフィルタ値
@@ -196,7 +205,7 @@ function output = showplot( depth )
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
-	subplot( 2,3,5 )
+	subplot( 3,3,5 )
 	plot( time(index:end), data( index:end, colm_cf(1):colm_cf(1)+1 ) ); % 制御力（ロール，ピッチまわり）
 	legend(["tau_roll", "tau_pitch"], 'Location', 'best')
 	box on, grid on
@@ -207,7 +216,7 @@ function output = showplot( depth )
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%plot( data(:,colm_time), data(:,colm_alti(1):colm_alti(2)) )
 	%
-	subplot( 2,3,3 )
+	subplot( 3,3,3 )
 	hold on
 	plot( time(index:end), data( index:end, colm_atti(2) ) ); % 姿勢角（ヨー）
 	plot( time(index:end), data( index:end, colm_atti_f(2) ), '--' ); % 姿勢角のフィルタ値
@@ -223,7 +232,7 @@ function output = showplot( depth )
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
-	subplot( 2,3,6 )
+	subplot( 3,3,6 )
 	plot( time(index:end), data( index:end, colm_cf(1)+2 ) ); % ヨー方向制御力
 	legend(["tau_yaw"], 'Location', 'best')
 	box on, grid on
@@ -234,7 +243,16 @@ function output = showplot( depth )
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%plot( data(:,colm_time), data(:,colm_alti(1):colm_alti(2)) )
 	set(gcf, 'WindowState', 'maximized'); % Figure ウィンドウを最大化
-
+	%
+	subplot( 3,3,7 )
+	plot( time(index:end), data( index:end, colm_uc(1):colm_uc(2) ) ); % 要求制御力
+	legend(["uc_1", "uc_2", "uc_3", "uc_4"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(end) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
 	%output = data;
 	%output = data(:,colm_time);
 	%output = data(:,colm_atti(1):colm_atti(2));
