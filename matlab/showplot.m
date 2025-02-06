@@ -6,6 +6,7 @@ function output = showplot( depth )
 	end
 
 	% インデックスの指定
+	colm_time_PC = 2 ; % PC経過時間（ms）
 	colm_time = 4 ; % マイコン時間[ms]
 	colm_atti = [ 5, 7 ]; % 姿勢角
 	colm_atti_f = [ 8, 10 ]; % 姿勢角
@@ -32,9 +33,15 @@ function output = showplot( depth )
 
 	% マイコン時間を計算
 	time = data(:,colm_time) * 0.001 ; % [s]
+	time_diff = diff(time) ; % 差分の時間 [s]
+	% PC時刻を計算
+	time_PC = data(:,colm_time_PC ); % [s]
+	time_PC_diff = diff(time_PC); % [s]
 
 	% モードが0でなくなる最初のインデックスを調べる
-	index = find( data(:,colm_mode) ~= 0, 1);
+	index = find( data(:,colm_mode) ~= 0, 1)
+	% データの総数
+	index_end = length(data(:,1))
 
 	% ===================================================================================================
 	%  図の設定
@@ -112,28 +119,41 @@ function output = showplot( depth )
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	
+	%%
 	figure()
 	subplot(2,1,1)
-	plot( time(index:end), data( index:end, end-1:end ) ); % 時刻
-	legend(["in PC time", "in FC time"], 'Location', 'best')
+	plot( time_diff ); % 時刻
+	legend(["Micon sampling interval"], 'Location', 'best')
 	box on, grid on
-	xlim([ time(index), time(end) ])
+	%index
+	%length(data(index:end,1))-1
+	xlim([ index, index_end-1 ])
 	ylabel("difference time [ms]")
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
 	subplot(2,1,2)
-	plot( time(index:end), data( index:end, end-1:end ) ); % 時刻
-	legend(["in PC time", "in FC time"], 'Location', 'best')
+	plot( time_PC_diff ); % 時刻
+	legend(["PC sampling interval"], 'Location', 'best')
 	box on, grid on
-	xlim([ time(index), time(end) ])
-	ylim([ -1, 4 * max( median( data(index:end, end-1)), median( data(index:end, end))) ])
+	%index
+	%length(data(index:end,1))-1
+	xlim([ index, index_end-1 ])
 	ylabel("difference time [ms]")
-	xlabel("Time (in FC) [s]")
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%subplot(2,1,2)
+	%plot( time(index:end), data( index:end, end-1:end ) ); % 時刻
+	%legend(["in PC time", "in FC time"], 'Location', 'best')
+	%box on, grid on
+	%xlim([ time(index), time(end) ])
+	%ylim([ -1, 4 * max( median( data(index:end, end-1)), median( data(index:end, end))) ])
+	%ylabel("difference time [ms]")
+	%xlabel("Time (in FC) [s]")
+	%ax = gca;
+	%ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 
-	%
+	%%
 	figure()
 	% プロット作成
 	subplot( 2,3,1 )
@@ -144,6 +164,7 @@ function output = showplot( depth )
 	hold off
 	legend(["altitude [mm]", "altitude (filtered) [mm]", "reference [mm]"], 'Location', 'best')
 	ylabel("Altitude [mm]")
+	xlabel("Time (in FC) [s]")
 	box on, grid on
 	xlim([ time(index), time(end) ])
 	ax = gca;
@@ -212,7 +233,7 @@ function output = showplot( depth )
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%plot( data(:,colm_time), data(:,colm_alti(1):colm_alti(2)) )
-	%
+	set(gcf, 'WindowState', 'maximized'); % Figure ウィンドウを最大化
 
 	%output = data;
 	%output = data(:,colm_time);
