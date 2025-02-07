@@ -232,7 +232,7 @@ void loop() {
        if( alt > 2000 ){ mode = 0; };
        if( abs(att[0]) > 90 ){ mode = 0; };
        if( abs(att[1]) > 90 ){ mode = 0; };
-       if( abs(att[2]) > 90 ){ mode = 0; };
+       //if( abs(att[2]) > 90 ){ mode = 0; };
 
         /*
           指令値カウンタの確認・処理
