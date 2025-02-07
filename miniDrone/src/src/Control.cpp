@@ -153,10 +153,10 @@ float* controller_demo( float* y, float distance ){
 
 // 分配器の実装例
 void allocator_demo( float t_r, float t_p, float t_y, float f_t ){
-    uc[0] = (-1) * t_r + (+1) * t_p + (+1) * t_y + (+1) * f_t + u_bias[0] ;
-    uc[1] = (-1) * t_r + (-1) * t_p + (-1) * t_y + (+1) * f_t + u_bias[1] ;
-    uc[2] = (+1) * t_r + (-1) * t_p + (+1) * t_y + (+1) * f_t + u_bias[2] ;
-    uc[3] = (+1) * t_r + (+1) * t_p + (-1) * t_y + (+1) * f_t + u_bias[3] ;
+    uc[0] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[0] ;
+    uc[1] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[1] ;
+    uc[2] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[2] ;
+    uc[3] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[3] ;
 }
 
 // ローパスフィルタの実装例
