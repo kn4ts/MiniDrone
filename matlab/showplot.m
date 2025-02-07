@@ -253,6 +253,41 @@ function output = showplot( depth )
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%
+	subplot( 6,3,14 )
+	plot( time(index:end), data( index:end, colm_uc(1)+3 ) ); % 要求制御力
+	legend(["uc_4"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(end) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,15 )
+	plot( time(index:end), data( index:end, colm_uc(1) ) ); % 要求制御力
+	legend(["uc_1"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(end) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,17 )
+	plot( time(index:end), data( index:end, colm_uc(1)+2 ) ); % 要求制御力
+	legend(["uc_3"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(end) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,18 )
+	plot( time(index:end), data( index:end, colm_uc(1)+1 ) ); % 要求制御力
+	legend(["uc_2"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(end) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	%output = data;
 	%output = data(:,colm_time);
 	%output = data(:,colm_atti(1):colm_atti(2));
