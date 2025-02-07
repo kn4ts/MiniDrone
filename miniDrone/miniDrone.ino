@@ -90,8 +90,11 @@ void modeDetectionBLE(){
         mode = 10; // モードを10に変更
         setAltitudeReference(100); // 高度目標値をセット
         break;
-      case 't': // ロール・ピッチ角制御動作の確認モード
-        mode = 20; //
+      case 'r': // ロール角動作の確認モード
+        mode = 21; //
+        break;
+      case 'p': // ピッチ角動作の確認モード
+        mode = 22; //
         break;
       case 'c': // 受信文字が（char型の）'c'なら
         calibrateSensors();     // センサのバイアス値設定
@@ -272,20 +275,23 @@ void loop() {
           uc[2] = uc_pointer[2];
           uc[3] = uc_pointer[3];
           break;
-        case 20:
+        case 21: // ロール角動作の確認モード
           if(0<att[0]){ // ロール角が正なら
             uc[0] = 20 ; uc[1] = 20 ; uc[2] = 0 ; uc[3] = 0 ;
-          }else if(0<att[0]){ // ロール角が負なら
+          }else if(0>att[0]){ // ロール角が負なら
             uc[0] = 0 ; uc[1] = 0 ; uc[2] = 20 ; uc[3] = 20 ;
           }else{
             uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
           }
+          break;
+        case 22: // ピッチ角モードの確認モード
           if(0<att[1]){ // ピッチ角が正なら
-            uc[0] += 0 ; uc[1] += 20 ; uc[2] += 20 ; uc[3] += 0 ;
+            uc[0] = 0 ; uc[1] = 20 ; uc[2] = 20 ; uc[3] = 0 ;
           }else if(0>att[1]){ // ピッチ角が負なら
-            uc[0] += 20 ; uc[1] += 0 ; uc[2] += 0 ; uc[3] += 20 ;
-          }else{};
-
+            uc[0] = 20 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 20 ;
+          }else{
+            uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
+          }
           break;
         default: // mode のデフォルト設定
           uc_pointer = setUc( 0, 0, 0, 0 ); break; // 全入力を0に
