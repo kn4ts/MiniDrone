@@ -88,7 +88,8 @@ void modeDetectionBLE(){
         break; */
       case 's': // 受信文字が（char型の）'s'なら
         mode = 10; // モードを10に変更
-        setAltitudeReference(100); // 高度目標値をセット
+        //setAltitudeReference(100); // 高度目標値をセット
+        setAltitudeReference(200); // 高度目標値をセット
         break;
       case 'r': // ロール角動作の確認モード
         mode = 21; //

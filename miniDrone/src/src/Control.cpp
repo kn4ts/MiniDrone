@@ -40,13 +40,13 @@ static AltGain altK = { 0.01, 0.2, 0.01 };
 //static float alt_Kd = 0.003;
 // ロール角度ゲイン
 //static RollGain rolK = { 1.2, 0.01, 0.01 };
-static RollGain rolK = { 0.3, 0.0, 0.02 };
+static RollGain rolK = { 0.1, 0.0, 0.1 };
 //static float rol_Kp = 0.2;
 //static float rol_Ki = 0.01;
 //static float rol_Kd = 0.01;
 // ピッチ角度ゲイン
 //static PitchGain pitK = { 1.2, 0.01, 0.01 };
-static PitchGain pitK = { 0.3, 0.0, 0.02 };
+static PitchGain pitK = { 0.1, 0.0, 0.1 };
 //static float pit_Kp = 0.2;
 //static float pit_Ki = 0.01;
 //static float pit_Kd = 0.01;
@@ -66,7 +66,8 @@ static float cont_force[4] = { 0, 0, 0, 0} ; // 要求制御力をまとめる�
 static float uc[4] = { 0, 0, 0, 0}; // 制御器出力の配列
 // バイアス入力
 //static float u_bias[4] = {10,10,15,15}; // 試行錯誤
-static float u_bias[4] = {110,110,115,115}; // 試行錯誤
+//static float u_bias[4] = {110,110,115,115}; // 試行錯誤
+static float u_bias[4] = {110,110,114,115}; // 試行錯誤
 
 // 制御器実装用の変数
 static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
