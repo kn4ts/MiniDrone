@@ -75,9 +75,11 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 			case 5 % アーム
 				mble.sendMessage('a');
 			case 7 % 制御開始
-				%mble.sendMessage('p');
+% 				mble.sendMessage('p');
 				%mble.sendMessage('r');
 				%mble.sendMessage('t');
+				mble.sendMessage('i');
+			case 8 % 制御開始
 				mble.sendMessage('s');
 		end
 	end

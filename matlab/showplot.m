@@ -40,6 +40,7 @@ function output = showplot( depth )
 
 	% モードが0でなくなる最初のインデックスを調べる
 	index = find( data(:,colm_mode) ~= 0, 1)
+	change_indices = find( data(1:end-1,colm_mode) ~= 0 & data(2:end,colm_mode) == 0)
 	% データの総数
 	index_end = length(data(:,1))
 
@@ -166,6 +167,7 @@ function output = showplot( depth )
 	plot( time(index:end), data( index:end, colm_alti(1) ) ); % 高度
 	plot( time(index:end), data( index:end, colm_alti(2) ) ); % 高度のフィルタ値
 	plot( time(index:end), data( index:end, colm_ref(1) ), 'r' ); % 高度の目標値
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	hold off
 	legend(["altitude [mm]", "altitude (filtered) [mm]", "reference [mm]"], 'Location', 'best')
 	ylabel("Altitude [mm]")
@@ -181,6 +183,7 @@ function output = showplot( depth )
 	%
 	subplot( 3,3,4 )
 	plot( time(index:end), data( index:end, colm_cf(1)+3 ) ); % 総推力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["f_all"], 'Location', 'best')
 	box on, grid on
 	xlim([ time(index), time(end) ])
@@ -194,6 +197,7 @@ function output = showplot( depth )
 	plot( time(index:end), data( index:end, colm_atti(1):colm_atti(2)-1 ) ); % 姿勢角（ロール，ピッチ）
 	plot( time(index:end), data( index:end, colm_atti_f(1):colm_atti_f(2)-1 ), '--' ); % 姿勢角のフィルタ値
 	plot( time(index:end), data( index:end, colm_ref(2)-1:colm_ref(2) ), 'r:' ); % 姿勢角の目標値
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	hold off
 	legend(["roll [deg]", "pitch [deg]", ...
 	        "roll(filtered) [deg]", "pitch(filtered) [deg]", ...
@@ -207,6 +211,7 @@ function output = showplot( depth )
 	%
 	subplot( 3,3,5 )
 	plot( time(index:end), data( index:end, colm_cf(1):colm_cf(1)+1 ) ); % 制御力（ロール，ピッチまわり）
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["tau_roll", "tau_pitch"], 'Location', 'best')
 	box on, grid on
 	xlim([ time(index), time(end) ])
@@ -220,6 +225,7 @@ function output = showplot( depth )
 	hold on
 	plot( time(index:end), data( index:end, colm_atti(2) ) ); % 姿勢角（ヨー）
 	plot( time(index:end), data( index:end, colm_atti_f(2) ), '--' ); % 姿勢角のフィルタ値
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	%plot( time(index:end), data( index:end, colm_ref(2)-1:colm_ref(2) ), 'r:' ); % 姿勢角の目標値
 	hold off
 	legend(["yaw [deg]", ...
@@ -234,6 +240,7 @@ function output = showplot( depth )
 	%
 	subplot( 3,3,6 )
 	plot( time(index:end), data( index:end, colm_cf(1)+2 ) ); % ヨー方向制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["tau_yaw"], 'Location', 'best')
 	box on, grid on
 	xlim([ time(index), time(end) ])
@@ -246,6 +253,7 @@ function output = showplot( depth )
 	%
 	subplot( 3,3,7 )
 	plot( time(index:end), data( index:end, colm_uc(1):colm_uc(2) ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["uc_1", "uc_2", "uc_3", "uc_4"], 'Location', 'best')
 	ylabel("Controller output [-]")
 	box on, grid on
@@ -255,6 +263,7 @@ function output = showplot( depth )
 	%
 	subplot( 6,3,14 )
 	plot( time(index:end), data( index:end, colm_uc(1)+3 ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["uc_4"], 'Location', 'best')
 	ylabel("Controller output [-]")
 	box on, grid on
@@ -264,6 +273,7 @@ function output = showplot( depth )
 	%
 	subplot( 6,3,15 )
 	plot( time(index:end), data( index:end, colm_uc(1) ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["uc_1"], 'Location', 'best')
 	ylabel("Controller output [-]")
 	box on, grid on
@@ -273,6 +283,7 @@ function output = showplot( depth )
 	%
 	subplot( 6,3,17 )
 	plot( time(index:end), data( index:end, colm_uc(1)+2 ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["uc_3"], 'Location', 'best')
 	ylabel("Controller output [-]")
 	box on, grid on
@@ -282,6 +293,7 @@ function output = showplot( depth )
 	%
 	subplot( 6,3,18 )
 	plot( time(index:end), data( index:end, colm_uc(1)+1 ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
 	legend(["uc_2"], 'Location', 'best')
 	ylabel("Controller output [-]")
 	box on, grid on
@@ -291,5 +303,146 @@ function output = showplot( depth )
 	%output = data;
 	%output = data(:,colm_time);
 	%output = data(:,colm_atti(1):colm_atti(2));
+	%%
+	figure()
+	% プロット作成
+	subplot( 3,3,1 )
+	hold on
+	plot( time(index:end), data( index:end, colm_alti(1) ) ); % 高度
+	plot( time(index:end), data( index:end, colm_alti(2) ) ); % 高度のフィルタ値
+	plot( time(index:end), data( index:end, colm_ref(1) ), 'r' ); % 高度の目標値
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	hold off
+	legend(["altitude [mm]", "altitude (filtered) [mm]", "reference [mm]"], 'Location', 'best')
+	ylabel("Altitude [mm]")
+	xlabel("Time (in FC) [s]")
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	if 200<max(data(index:end, colm_alti(1)))
+		yl = ylim;
+		ylim([ yl(1), 200 ])
+	end
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 3,3,4 )
+	plot( time(index:end), data( index:end, colm_cf(1)+3 ) ); % 総推力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["f_all"], 'Location', 'best')
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ylabel("Control force (F_all) [-]")
+	xlabel("Time (in FC) [s]")
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 3,3,2 )
+	hold on
+	plot( time(index:end), data( index:end, colm_atti(1):colm_atti(2)-1 ) ); % 姿勢角（ロール，ピッチ）
+	plot( time(index:end), data( index:end, colm_atti_f(1):colm_atti_f(2)-1 ), '--' ); % 姿勢角のフィルタ値
+	plot( time(index:end), data( index:end, colm_ref(2)-1:colm_ref(2) ), 'r:' ); % 姿勢角の目標値
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	hold off
+	legend(["roll [deg]", "pitch [deg]", ...
+	        "roll(filtered) [deg]", "pitch(filtered) [deg]", ...
+			"reference(roll) [deg]", "reference(pitch) [deg]"], 'Location', 'best')
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ylabel("Attitude (Roll, Pitch) [deg]")
+	xlabel("Time (in FC) [s]")
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 3,3,5 )
+	plot( time(index:end), data( index:end, colm_cf(1):colm_cf(1)+1 ) ); % 制御力（ロール，ピッチまわり）
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["tau_roll", "tau_pitch"], 'Location', 'best')
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ylabel("Control force (tau_roll, tau_pitch) [-]")
+	xlabel("Time (in FC) [s]")
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%plot( data(:,colm_time), data(:,colm_alti(1):colm_alti(2)) )
+	%
+	subplot( 3,3,3 )
+	hold on
+	plot( time(index:end), data( index:end, colm_atti(2) ) ); % 姿勢角（ヨー）
+	plot( time(index:end), data( index:end, colm_atti_f(2) ), '--' ); % 姿勢角のフィルタ値
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	%plot( time(index:end), data( index:end, colm_ref(2)-1:colm_ref(2) ), 'r:' ); % 姿勢角の目標値
+	hold off
+	legend(["yaw [deg]", ...
+	        "yaw(filtered) [deg]"] , 'Location', 'best')
+			%"reference(roll) [deg]", "reference(pitch) [deg]"])
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ylabel("Attitude (Yaw) [deg]")
+	xlabel("Time (in FC) [s]")
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 3,3,6 )
+	plot( time(index:end), data( index:end, colm_cf(1)+2 ) ); % ヨー方向制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["tau_yaw"], 'Location', 'best')
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ylabel("Control force (tau_yaw) [-]")
+	xlabel("Time (in FC) [s]")
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%plot( data(:,colm_time), data(:,colm_alti(1):colm_alti(2)) )
+	set(gcf, 'WindowState', 'maximized'); % Figure ウィンドウを最大化
+	%
+	subplot( 3,3,7 )
+	plot( time(index:end), data( index:end, colm_uc(1):colm_uc(2) ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["uc_1", "uc_2", "uc_3", "uc_4"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,14 )
+	plot( time(index:end), data( index:end, colm_uc(1)+3 ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["uc_4"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,15 )
+	plot( time(index:end), data( index:end, colm_uc(1) ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["uc_1"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,17 )
+	plot( time(index:end), data( index:end, colm_uc(1)+2 ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["uc_3"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
+	%
+	subplot( 6,3,18 )
+	plot( time(index:end), data( index:end, colm_uc(1)+1 ) ); % 要求制御力
+	xline( time(change_indices), '--', 'linewidth', 2 )
+	legend(["uc_2"], 'Location', 'best')
+	ylabel("Controller output [-]")
+	box on, grid on
+	xlim([ time(index), time(change_indices) ])
+	ax = gca;
+	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
 	output = fileName ;
 end
