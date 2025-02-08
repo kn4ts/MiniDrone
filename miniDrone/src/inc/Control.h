@@ -46,6 +46,8 @@
 
     float* idle_thrust(); // アイドリング入力の生成
 
+    float saturate_controller_rollpitch( float u );
+
     void setAltitudeReference(float ref) ; // 高度指令値のセッタ
     void setRollReference(float ref) ; // ロール角指令値のセッタ
     void setPitchReference(float ref) ; // ピッチ角指令値のセッタ

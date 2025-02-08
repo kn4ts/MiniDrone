@@ -27,7 +27,7 @@ static float ref_yaw = 0;   // ヨー目標値[degree?]
 //static AltGain altK = { 1, 1, 0.001 };
 //static AltGain altK = { 1, 1, 0.005 };
 //static AltGain altK = { 1, 1, 0.01 };
-static AltGain altK = { 0.1, 0.3, 0.02 };
+static AltGain altK = { 0.2, 0.6, 0.08 };
 //static AltGain altK = { 1, 2, 0.0001 };
 //static AltGain altK = { 1, 1, 0.0001 };
 //static AltGain altK = { 0.5, 1, 0.0001 };
@@ -40,16 +40,19 @@ static AltGain altK = { 0.1, 0.3, 0.02 };
 //static float alt_Kd = 0.003;
 // ロール角度ゲイン
 //static RollGain rolK = { 1.2, 0.01, 0.01 };
-static RollGain rolK = { 0.01, 0.0, 0.1 };
+static RollGain rolK = { 0.4, 0.0, 0.4 };
 //static float rol_Kp = 0.2;
 //static float rol_Ki = 0.01;
 //static float rol_Kd = 0.01;
 // ピッチ角度ゲイン
 //static PitchGain pitK = { 1.2, 0.01, 0.01 };
-static PitchGain pitK = { 0.01, 0.0, 0.1 };
+static PitchGain pitK = { 0.4, 0.0, 0.4 };
 //static float pit_Kp = 0.2;
 //static float pit_Ki = 0.01;
 //static float pit_Kd = 0.01;
+
+// ロール・ピッチ方向PID制御器出力の最小・最大値
+static float controller_output_max = 10.0 ;
 
 /* 制御器の内部変数 */
 static AltVariable alt = { 0, 0, 0, 0, 0, 0 }; // 高度に関するもの
@@ -67,7 +70,7 @@ static float uc[4] = { 0, 0, 0, 0}; // 制御器出力の配列
 // バイアス入力
 //static float u_bias[4] = {10,10,15,15}; // 試行錯誤
 //static float u_bias[4] = {110,110,115,115}; // 試行錯誤
-static float u_bias[4] = {10+0,10+0,10+4,10+5}; // ロータのバランス補正入力，試行錯誤
+static float u_bias[4] = {15+6,15+6,15+7,15+9}; // ロータのバランス補正入力，試行錯誤
 //static float u_idle[4] = {90,90,90,90}; // アイドリング時の入力
 static float u_idle[4] = {80,80,80,80}; // アイドリング時の入力
 
@@ -141,6 +144,10 @@ float* controller_demo( float* y, float distance ){
     float tau_yaw = 0.0 ;
     float f_total = altK.p * alt.e + altK.i * alt.ei + altK.d * alt.ed ; // 高度方向
 
+    // 制御器出力の飽和
+    tau_rol = saturate_controller_rollpitch( tau_rol );
+    tau_pit = saturate_controller_rollpitch( tau_pit );
+
     // ミキシング（分配）
     allocator_demo( tau_rol, tau_pit, tau_yaw, f_total );
 
@@ -156,10 +163,10 @@ float* controller_demo( float* y, float distance ){
 
 // 分配器の実装例
 void allocator_demo( float t_r, float t_p, float t_y, float f_t ){
-    uc[0] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[0] + u_idle[0] ;
-    uc[1] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[1] + u_idle[1] ;
-    uc[2] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[2] + u_idle[2] ;
-    uc[3] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[3] + u_idle[3] ;
+    uc[0] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[0] + u_idle[0] ;
+    uc[1] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[1] + u_idle[1] ;
+    uc[2] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[2] + u_idle[2] ;
+    uc[3] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[3] + u_idle[3] ;
 }
 
 // アイドリング入力
@@ -170,6 +177,13 @@ float* idle_thrust(){
     uc[3] = u_idle[3] ;
 
     return &uc[0];
+}
+
+//
+float saturate_controller_rollpitch( float u ){
+    if (  controller_output_max < u ){ u =  controller_output_max; };
+    if ( -controller_output_max > u ){ u = -controller_output_max; };
+    return u ;
 }
 
 // ローパスフィルタの実装例
