@@ -27,7 +27,7 @@ static float ref_yaw = 0;   // ヨー目標値[degree?]
 //static AltGain altK = { 1, 1, 0.001 };
 //static AltGain altK = { 1, 1, 0.005 };
 //static AltGain altK = { 1, 1, 0.01 };
-static AltGain altK = { 0.2, 0.6, 0.08 };
+static AltGain altK = { 0.2, 1.0, 0.1 };
 //static AltGain altK = { 1, 2, 0.0001 };
 //static AltGain altK = { 1, 1, 0.0001 };
 //static AltGain altK = { 0.5, 1, 0.0001 };
@@ -40,13 +40,13 @@ static AltGain altK = { 0.2, 0.6, 0.08 };
 //static float alt_Kd = 0.003;
 // ロール角度ゲイン
 //static RollGain rolK = { 1.2, 0.01, 0.01 };
-static RollGain rolK = { 0.4, 0.0, 0.4 };
+static RollGain rolK = { 0.5, 0.0, 0.3 };
 //static float rol_Kp = 0.2;
 //static float rol_Ki = 0.01;
 //static float rol_Kd = 0.01;
 // ピッチ角度ゲイン
 //static PitchGain pitK = { 1.2, 0.01, 0.01 };
-static PitchGain pitK = { 0.4, 0.0, 0.4 };
+static PitchGain pitK = { 0.5, 0.0, 0.3 };
 //static float pit_Kp = 0.2;
 //static float pit_Ki = 0.01;
 //static float pit_Kd = 0.01;
