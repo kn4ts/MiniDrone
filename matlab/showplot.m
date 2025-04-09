@@ -318,9 +318,9 @@ function output = showplot( depth )
 	xlabel("Time (in FC) [s]")
 	box on, grid on
 	xlim([ time(index), time(change_indices) ])
-	if 200<max(data(index:end, colm_alti(1)))
+	if 300<max(data(index:end, colm_alti(1)))
 		yl = ylim;
-		ylim([ yl(1), 200 ])
+		ylim([ yl(1), 300 ])
 	end
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に

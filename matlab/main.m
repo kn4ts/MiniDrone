@@ -19,7 +19,7 @@ f = genCallbackFunction( mble, df ); % BLE受信により起動させるコー�
 mble.chara_read.DataAvailableFcn = f;
 
 % タイマー機能の設定
-EXP_TIME = 30 ;	% 最大実験時間の設定[s]
+EXP_TIME = 3000 ;	% 最大実験時間の設定[s]
 tm = Timer( 1, EXP_TIME );	% 割り込み周期[s]，実行回数[-]
 
 % キー割り込み用のクラス
@@ -47,6 +47,8 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				cmd = '4'; % 左移動指令
 			case 'rightarrow'
 				cmd = '6'; % 右移動指令
+			case 'c'
+				cmd = 'c'; % キャリブレーション
 			otherwise
 				break;	% それ以外ならループ抜ける
 		end
@@ -76,9 +78,9 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				mble.sendMessage('a');
 			case 7 % 制御開始
 % 				mble.sendMessage('p');
-				%mble.sendMessage('r');
-				%mble.sendMessage('t');
-				mble.sendMessage('i');
+% 				%mble.sendMessage('r');
+% 				%mble.sendMessage('t');
+				mble.sendMessage('i'); % アイドリング
 			case 8 % 制御開始
 				mble.sendMessage('s');
 		end

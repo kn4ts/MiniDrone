@@ -92,16 +92,9 @@ float* controller_demo( float* y, float distance ){
     deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算，最大でも0.02[s]に制限
     prevTime = currTime; // 前回時刻を更新
 
-    /* 信号の更新 */ 
-    // 高度情報
-    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
-    //
-    alt.ed = ( -alt.filt +alt.filt_prev ) / deltaTime ; // 微分先行で計測値を数値微分
-    alt.e = ref_alt -alt.filt ; // 現在の誤差
-    alt.ei += alt.e * deltaTime ; // 誤差の積分
-    //
-    alt.filt_prev = alt.filt ; // 1ステップ前のフィルタ後高度を更新
-    //
+    /* -------------------------------
+        信号の更新
+    ------------------------------- */ 
     // ロール角度情報
     rol.filt = lowpassFilterRoll_demo( rol.filt_prev, y[0] ) ; // ロール角計測値にローパスフィルタをかける
     //
@@ -112,7 +105,7 @@ float* controller_demo( float* y, float distance ){
     //
     rol.e_prev = rol.e ; // 1ステップ前のロール角誤差を更新
     rol.filt_prev = rol.filt ; // 1ステップ前のフィルタ処理後のロール角を更新
-    //
+
     // ピッチ角度情報
     pit.filt = lowpassFilterPitch_demo( pit.filt_prev, y[1] ) ; // ピッチ角計測値にローパスフィルタをかける
     //
@@ -123,7 +116,7 @@ float* controller_demo( float* y, float distance ){
     //
     pit.e_prev = pit.e ; // 1ステップ前のピッチ角誤差を更新
     pit.filt_prev = pit.filt ; // 1ステップ前のフィルタ処理後のピッチ角を更新
-    //
+
     // ヨー角度情報
     yaw.filt = lowpassFilterYaw_demo( yaw.filt_prev, y[2] ) ; // ヨー角計測値にローパスフィルタをかける
     //
@@ -135,6 +128,16 @@ float* controller_demo( float* y, float distance ){
     yaw.e_prev = yaw.e ; // 1ステップ前の誤差を更新
     yaw.filt_prev = yaw.filt;
 
+    // 高度情報
+    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
+    alt.filt = compensationWithAttitude( alt.filt, rol.filt, pit.filt );
+    //
+    alt.ed = ( -alt.filt +alt.filt_prev ) / deltaTime ; // 微分先行で計測値を数値微分
+    alt.e = ref_alt -alt.filt ; // 現在の誤差
+    alt.ei += alt.e * deltaTime ; // 誤差の積分
+    //
+    alt.filt_prev = alt.filt ; // 1ステップ前のフィルタ後高度を更新
+    //
     // ステータス（飛行状況）の判定・更新
     if( status == 0 && distance > 6 ){ status = 1; } // 離陸
 
@@ -206,6 +209,11 @@ float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ){
     // 高度計測値に1次のローパスフィルタをかける
     float yaw_filt_new = ( 1 - alpha.yaw ) * yaw_filt_prev + alpha.yaw * yaw ;
     return yaw_filt_new;
+}
+// 高度計測値の姿勢による補正
+float compensationWithAttitude( float y, float phi, float theta ){
+    float y_c = cos(theta*PI/180.0) * cos(phi*PI/180.0) * y ;
+    return y_c;
 }
 
 // フィルタ処理後の値のゲッタ関数
