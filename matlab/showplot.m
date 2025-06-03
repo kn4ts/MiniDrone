@@ -320,7 +320,7 @@ function output = showplot( depth )
 	xlim([ time(index), time(change_indices) ])
 	if 300<max(data(index:end, colm_alti(1)))
 		yl = ylim;
-		ylim([ yl(1), 300 ])
+		ylim([ yl(1), 400 ])
 	end
 	ax = gca;
 	ax.XAxis.Exponent = 0;  % X軸の指数表示を無効に
@@ -340,7 +340,8 @@ function output = showplot( depth )
 	hold on
 	plot( time(index:end), data( index:end, colm_atti(1):colm_atti(2)-1 ) ); % 姿勢角（ロール，ピッチ）
 	plot( time(index:end), data( index:end, colm_atti_f(1):colm_atti_f(2)-1 ), '--' ); % 姿勢角のフィルタ値
-	plot( time(index:end), data( index:end, colm_ref(2)-1:colm_ref(2) ), 'r:' ); % 姿勢角の目標値
+	plot( time(index:end), data( index:end, colm_ref(2)-1 ), 'b:' ); % 姿勢角の目標値
+	plot( time(index:end), data( index:end, colm_ref(2) ), 'r:' ); % 姿勢角の目標値
 	xline( time(change_indices), '--', 'linewidth', 2 )
 	hold off
 	legend(["roll [deg]", "pitch [deg]", ...
