@@ -44,6 +44,13 @@
     float lowpassFilterPitch_demo( float pit_filt_prev, float pit ); // ピッチ角について
     float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ); // ヨー角について
 
+    // 姿勢角度による高度計測値の補正
+    float compensationWithAttitude(float y, float phi, float theta);
+
+    float* idle_thrust(); // アイドリング入力の生成
+
+    float saturate_controller_rollpitch( float u );
+
     void setAltitudeReference(float ref) ; // 高度指令値のセッタ
     void setRollReference(float ref) ; // ロール角指令値のセッタ
     void setPitchReference(float ref) ; // ピッチ角指令値のセッタ

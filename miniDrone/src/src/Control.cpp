@@ -8,47 +8,21 @@
 #include "../inc/Control.h"
 
 // 目標値
-// static float ref_alt = 0;
-// static float ref_alt = 20;
-//static float ref_alt = 10;
-static float ref_alt = 20;  // 高度目標値[mm]
-static float ref_rol = 0;   // ロール目標値[degree?]
-static float ref_pit = 0;   // ピッチ目標値[degree?]
-static float ref_yaw = 0;   // ヨー目標値[degree?]
+static float ref_alt = 20;  // 高度目標値[mm]の初期値
+static float ref_rol = 0;   // ロール目標値[degree]の初期値
+static float ref_pit = 0;   // ピッチ目標値[degree]の初期値
+static float ref_yaw = 0;   // ヨー目標値[degree]の初期値
 
 /* 制御器ゲイン */
 // 高度ゲイン
-// 一番まし？
-// static float alt_Kp = 2;
-// static float alt_Ki = 2;
-// static float alt_Kd = 0.003;
-// static AltGain altK = { 2, 1, 0.001 };
-//static AltGain altK = { 1, 1, 0.001 };
-//static AltGain altK = { 1, 1, 0.005 };
-//static AltGain altK = { 1, 1, 0.01 };
-static AltGain altK = { 1, 1, 0.005 };
-//static AltGain altK = { 1, 2, 0.0001 };
-//static AltGain altK = { 1, 1, 0.0001 };
-//static AltGain altK = { 0.5, 1, 0.0001 };
-//static AltGain altK = { 0.5, 2, 0.0001 };
-//static float alt_Kp = 2;
-//static float alt_Ki = 2;
-//static float alt_d = 0.05;
-//static float alt_d = 0.1;
-//static float alt_d = 0.01;
-//static float alt_Kd = 0.003;
+static AltGain altK = { 0.2, 0.05, 0.03 }; // 高度制御器ゲインの構造体（P, I, D の順）
 // ロール角度ゲイン
-//static RollGain rolK = { 1.2, 0.01, 0.01 };
-static RollGain rolK = { 0.2, 0.01, 0.01 };
-//static float rol_Kp = 0.2;
-//static float rol_Ki = 0.01;
-//static float rol_Kd = 0.01;
+static RollGain rolK = { 2.0, 0.0, 0.5 }; // ロール角度ゲインの構造体（P, I, D の順）
 // ピッチ角度ゲイン
-//static PitchGain pitK = { 1.2, 0.01, 0.01 };
-static PitchGain pitK = { 0.2, 0.01, 0.01 };
-//static float pit_Kp = 0.2;
-//static float pit_Ki = 0.01;
-//static float pit_Kd = 0.01;
+static PitchGain pitK = { 2.0, 0.0, 0.5 }; // ピッチ角度ゲインの構造体（P, I, D の順）
+
+// ロール・ピッチ方向PID制御器出力の最小・最大値
+static float controller_output_max = 10.0 ; // 試行錯誤
 
 /* 制御器の内部変数 */
 static AltVariable alt = { 0, 0, 0, 0, 0, 0 }; // 高度に関するもの
@@ -60,11 +34,15 @@ static YawVariable yaw = { 0, 0, 0, 0, 0, 0}; // ヨー角度に関するもの
 static LowpassFilterGain alpha = { 0.1, 0.15, 0.15, 0.15 }; // 高度，ロール，ピッチ，ヨーの順
 
 // 要求制御力
-static float cont_force[4] ; // 要求制御力をまとめる配列
+static float cont_force[4] = { 0, 0, 0, 0} ; // 要求制御力をまとめる配列
 // 制御器出力
-static float uc[4]; // 制御器出力の配列
+static float uc[4] = { 0, 0, 0, 0}; // 制御器出力の配列
 // バイアス入力
-static float u_bias[4] = {10,10,15,15};
+static float u_bias = 20; // ホバリングのためのバイアス入力成分，試行錯誤
+// オフセット入力
+static float u_offset[4] = {6,6,7,9}; // モータ個体差の補償のためのオフセット入力，試行錯誤
+// アイドリング時の入力
+static float u_idle = 10 ; // アイドリング時の入力
 
 // 制御器実装用の変数
 static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
@@ -84,16 +62,9 @@ float* controller_demo( float* y, float distance ){
     deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算，最大でも0.02[s]に制限
     prevTime = currTime; // 前回時刻を更新
 
-    /* 信号の更新 */ 
-    // 高度情報
-    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
-    //
-    alt.ed = ( -alt.filt +alt.filt_prev ) / deltaTime ; // 微分先行で計測値を数値微分
-    alt.e = ref_alt -alt.filt ; // 現在の誤差
-    alt.ei += alt.e * deltaTime ; // 誤差の積分
-    //
-    alt.filt_prev = alt.filt ; // 1ステップ前のフィルタ後高度を更新
-    //
+    /* -------------------------------
+        信号の更新
+    ------------------------------- */ 
     // ロール角度情報
     rol.filt = lowpassFilterRoll_demo( rol.filt_prev, y[0] ) ; // ロール角計測値にローパスフィルタをかける
     //
@@ -104,7 +75,7 @@ float* controller_demo( float* y, float distance ){
     //
     rol.e_prev = rol.e ; // 1ステップ前のロール角誤差を更新
     rol.filt_prev = rol.filt ; // 1ステップ前のフィルタ処理後のロール角を更新
-    //
+
     // ピッチ角度情報
     pit.filt = lowpassFilterPitch_demo( pit.filt_prev, y[1] ) ; // ピッチ角計測値にローパスフィルタをかける
     //
@@ -115,7 +86,7 @@ float* controller_demo( float* y, float distance ){
     //
     pit.e_prev = pit.e ; // 1ステップ前のピッチ角誤差を更新
     pit.filt_prev = pit.filt ; // 1ステップ前のフィルタ処理後のピッチ角を更新
-    //
+
     // ヨー角度情報
     yaw.filt = lowpassFilterYaw_demo( yaw.filt_prev, y[2] ) ; // ヨー角計測値にローパスフィルタをかける
     //
@@ -127,6 +98,16 @@ float* controller_demo( float* y, float distance ){
     yaw.e_prev = yaw.e ; // 1ステップ前の誤差を更新
     yaw.filt_prev = yaw.filt;
 
+    // 高度情報
+    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
+    alt.filt = compensationWithAttitude( alt.filt, rol.filt, pit.filt );
+    //
+    alt.ed = ( -alt.filt +alt.filt_prev ) / deltaTime ; // 微分先行で計測値を数値微分
+    alt.e = ref_alt -alt.filt ; // 現在の誤差
+    alt.ei += alt.e * deltaTime ; // 誤差の積分
+    //
+    alt.filt_prev = alt.filt ; // 1ステップ前のフィルタ後高度を更新
+    //
     // ステータス（飛行状況）の判定・更新
     if( status == 0 && distance > 6 ){ status = 1; } // 離陸
 
@@ -135,6 +116,10 @@ float* controller_demo( float* y, float distance ){
     float tau_pit = pitK.p * pit.e + pitK.i * pit.ei + pitK.d * pit.ed ; // ピッチ方向
     float tau_yaw = 0.0 ;
     float f_total = altK.p * alt.e + altK.i * alt.ei + altK.d * alt.ed ; // 高度方向
+
+    // 制御器出力の飽和
+    tau_rol = saturate_controller_rollpitch( tau_rol );
+    tau_pit = saturate_controller_rollpitch( tau_pit );
 
     // ミキシング（分配）
     allocator_demo( tau_rol, tau_pit, tau_yaw, f_total );
@@ -151,10 +136,27 @@ float* controller_demo( float* y, float distance ){
 
 // 分配器の実装例
 void allocator_demo( float t_r, float t_p, float t_y, float f_t ){
-    uc[0] = (-1) * t_r + (+1) * t_p + (+1) * t_y + (+1) * f_t + u_bias[0] ;
-    uc[1] = (-1) * t_r + (-1) * t_p + (-1) * t_y + (+1) * f_t + u_bias[1] ;
-    uc[2] = (+1) * t_r + (-1) * t_p + (+1) * t_y + (+1) * f_t + u_bias[2] ;
-    uc[3] = (+1) * t_r + (+1) * t_p + (-1) * t_y + (+1) * f_t + u_bias[3] ;
+    uc[0] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[0] ;
+    uc[1] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[1] ;
+    uc[2] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[2] ;
+    uc[3] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[3] ;
+}
+
+// アイドリング入力
+float* idle_thrust(){
+    uc[0] = u_idle ;
+    uc[1] = u_idle ;
+    uc[2] = u_idle ;
+    uc[3] = u_idle ;
+
+    return &uc[0];
+}
+
+//
+float saturate_controller_rollpitch( float u ){
+    if (  controller_output_max < u ){ u =  controller_output_max; };
+    if ( -controller_output_max > u ){ u = -controller_output_max; };
+    return u ;
 }
 
 // ローパスフィルタの実装例
@@ -177,6 +179,11 @@ float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ){
     // 高度計測値に1次のローパスフィルタをかける
     float yaw_filt_new = ( 1 - alpha.yaw ) * yaw_filt_prev + alpha.yaw * yaw ;
     return yaw_filt_new;
+}
+// 高度計測値の姿勢による補正
+float compensationWithAttitude( float y, float phi, float theta ){
+    float y_c = cos(theta*PI/180.0) * cos(phi*PI/180.0) * y ;
+    return y_c;
 }
 
 // フィルタ処理後の値のゲッタ関数
