@@ -12,11 +12,11 @@ df = DataFile( OUTPUT_FOLDER ) % データロガークラスのインスタン�
 
 % BLE通信の設定
 %ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
-ID = "5BEE875C506D"; % Bluetooth MAC アドレス
+ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
 mble = MatlabBLE( ID )	% BLE通信のインスタンス生成
 
 f = genCallbackFunction( mble, df ); % BLE受信により起動させるコールバック関数を生成
-mble.chara_read.DataAvailableFcn = f;
+mble.chara_read.DataAvailableFcn = f; % BLEデータ受信時のコールバック関数を設定
 
 % タイマー機能の設定
 EXP_TIME = 3000 ;	% 最大実験時間の設定[s]
@@ -31,7 +31,7 @@ i = 0 ; % カウンタ
 %	メインループ
 %=======================
 while( tm.t.Running == "on" ) % タイマーが有効である間ループ
-%for i=1:N
+	% キー入力のチェック
 	if app.getReadFlag() > 0
 		keyPressed = app.getReadChara(); % 押されたキーを取得
 		str = "key pressed ... " + keyPressed ;
@@ -59,30 +59,28 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 		app.setReadFlag(0); % フラグおろす
 	end
 
-	% タイマー間隔で実行する関数
-	if tm.getFlagVal() > 0
+	% タイマー間隔で実行する部分
+	if tm.getFlagVal() > 0 % タイマーフラグをチェック
 		tm.setFlagVal(0); % フラグおろす
-		i = i +1;
+		i = i +1; % カウンタをインクリメント
 
 		% 画面表示用の設定
 		[ data, time, s ] = mble.getReadData();	% BLEの受信メッセージを取得
-
 		str = i +": "+ s + ", " + char(data) ; 	% 文字列の整形
-		disp(str);
+		disp(str); % 画面表示
 
-		% ループ回数の途中でメッセージ送信（テスト）
+		% ループ回数の途中でメッセージ送信（BLE通信）
 		switch i
-			case 3	% キャリブレーション
-				mble.sendMessage('c');	% BLE通信でメッセージ送信
-			case 5 % アーム
-				mble.sendMessage('a');
-			case 7 % 制御開始
-% 				mble.sendMessage('p');
-% 				%mble.sendMessage('r');
-% 				%mble.sendMessage('t');
-				mble.sendMessage('i'); % アイドリング
-			case 8 % 制御開始
-				mble.sendMessage('s');
+			case 3	% 3秒後に
+				mble.sendMessage('c'); % キャリブレーションコマンド
+			case 5 % 5秒後に
+				mble.sendMessage('a'); % arm状態コマンド
+			case 7 % 7秒後に
+				% !! ↓のアイドリングコマンドを送信するとプロペラが回転するので注意 !!
+				% mble.sendMessage('i'); % アイドリングコマンド
+			case 8 % 8秒後に
+				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
+				% mble.sendMessage('s'); % 制御開始コマンド
 		end
 	end
 
@@ -97,11 +95,11 @@ pause(0.5);	% 一時停止
 
 close gcf; % 図の終了
 
-unsubscribe(mble.chara_read)
-clear mble
+unsubscribe(mble.chara_read) % データ受信の購読を解除
+clear mble	 % BLE通信のインスタンスを削除
 
-shapedata()
-showplot()
+shapedata()	% データの整形関数の呼び出し
+showplot()	% データのプロット関数の呼び出し
 
 %=======================
 %	関数定義
@@ -110,7 +108,6 @@ showplot()
 function f = genCallbackFunction( mble, df )
 	
 	% コールバック関数の定義
-	%function callback( src, evt, da, ti, se )
 	function callback( src, evt )
 		if mble.isReading.getVal()
 			disp("BLE is reading");
@@ -130,12 +127,18 @@ function f = genCallbackFunction( mble, df )
 			% データの通し番号をインクリメント
 			mble.snum.setVal( mble.snum.getVal() +1 );
 
-			str = [ num2str(mble.snum.getVal()), ',', char(mble.time.getVal()), ',', char(mble.time_e.getVal()), ...
-				',', char(mble.data.getVal()) ];
+			% 保存用文字列の生成
+			str = [ ...
+					num2str(mble.snum.getVal()), ',', ...	% 受信データの通し番号
+					char(mble.time.getVal()), ',', ...	 	% 受信時刻(PC時刻)
+					char(mble.time_e.getVal()), ',', ...	% 経過時間(PC時刻)
+					char(mble.data.getVal()) ...			% 受信データ
+				];
 
 			df.outputDataStr( str ); % データをファイルに出力
 			mble.isReading.setVal(false);	% 読み込みフラグをおろす
 		end
 	end
-	f = @callback ;
+
+	f = @callback ; % 定義したコールバック関数を返す
 end

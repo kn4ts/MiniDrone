@@ -125,14 +125,14 @@ void setMsgSendBLE( unsigned long t, float* att, float* mag, float alt, float* c
                 float ref_a, float ref_r, float ref_p ){
   //char msgBLE[192] ;  // BLEで送信するメッセージの格納変数
   sprintf(msgSendBLE,
-      "%d," // マイコン内時間[ms]
-      "%.2f,%.2f,%.2f," // 姿勢角（ロール，ピッチ，ヨーの順）
-      "%.2f,%.2f,%.2f," // フィルタ後の姿勢角（ロール，ピッチ，ヨーの順）
-      "%.2f,%.2f," // 高度[mm], 高度フィルタ値[mm]
-      "%.1f,%.1f,%.1f,%.1f,"  // 制御器出力1~4
-      "%.1f,%.1f,%.1f,%.1f,"  // 要求制御力(ロール，ピッチ，ヨー，総推力の順)
-      "%.1f,%.1f,%.1f," // 高度指令値，ロール指令値，ピッチ指令値
-      "%d,%d", // モード，アーム状態
+      "%d,"                 // マイコン内時間[ms]
+      "%.2f,%.2f,%.2f,"     // 姿勢角（ロール，ピッチ，ヨーの順）
+      "%.2f,%.2f,%.2f,"     // フィルタ後の姿勢角（ロール，ピッチ，ヨーの順）
+      "%.2f,%.2f,"          // 高度[mm], 高度フィルタ値[mm]
+      "%.1f,%.1f,%.1f,%.1f,"// 制御器出力1~4
+      "%.1f,%.1f,%.1f,%.1f,"// 要求制御力(ロール，ピッチ，ヨー，総推力の順)
+      "%.1f,%.1f,%.1f,"     // 高度指令値，ロール指令値，ピッチ指令値
+      "%d,%d",              // モード，アーム状態
       t,
       att[0],att[1],att[2],
       rol_f,pit_f,yaw_f,
@@ -191,7 +191,7 @@ void setup() {
       delay(500);
     };
   }
-  // ToFセンサを接続しているときはコメントを外してください
+
   // I2C接続のセンサの初期設定
   if( !initSensorI2C() ){
     // 失敗したらエラー表示
@@ -240,9 +240,9 @@ void loop() {
         /*
           高度・姿勢の異常検知
         */
-       if( alt > 2000 ){ mode = 0; };
-       if( abs(att[0]) > 90 ){ mode = 0; };
-       if( abs(att[1]) > 90 ){ mode = 0; };
+       if( alt > 2000 ){ mode = 0; };       // 高度計測値が異常ならモードを0に
+       if( abs(att[0]) > 90 ){ mode = 0; }; // ロール角が異常ならモードを0に
+       if( abs(att[1]) > 90 ){ mode = 0; }; // ピッチ角が異常ならモードを0に
        //if( abs(att[2]) > 90 ){ mode = 0; };
 
         /*
@@ -269,20 +269,20 @@ void loop() {
           ここに制御則を実装する
         */
         switch (mode){
-          case 0: // mode が 0 なら
+          case 0: // mode が 0 ならロータ停止
             uc_pointer = setUc( 0, 0, 0, 0 ); break;
-          case 1: // mode が 1 なら
+          case 1: // mode が 1 ならロータに一律20の出力
             uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全モータをPWM値20で回す指令
-          case 10: // mode が 10 なら
+          case 10: // mode が 10 なら制御実行
             uc_pointer = controller_demo( att, alt ); // 制御則を使用
-            uc[0] = uc_pointer[0];
+            uc[0] = uc_pointer[0]; // 制御器出力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];
             uc[3] = uc_pointer[3];
             break;
-          case 11: // mode が 11 なら
+          case 11: // mode が 11 ならアイドリング
             uc_pointer = idle_thrust( ); // アイドリングを行う
-            uc[0] = uc_pointer[0];
+            uc[0] = uc_pointer[0]; // アイドリング入力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];
             uc[3] = uc_pointer[3];
@@ -356,23 +356,6 @@ void loop() {
       }
       /* -------------------------------
          BLE通信用タイマー処理ここまで
-      ------------------------------- */
-
-      /* -------------------------------
-         ToFセンサ用タイマー処理のはじまり
-      ------------------------------- */
-      // if ( getFlagI2C() ){
-      // //  setFlagI2C(false); // フラグをおろす
-      // //if ( getTmToFFlag() ){
-      // //  setTmToFFlag(false); // フラグをおろす
-      //   setFlagI2C(false); // フラグをおろす
-      //   // 測距センサ値を用いた高度の更新
-      //   // 注意：測定値が準備できていないとブロックする
-      //   updateAltitudeVal();
-      //   //Serial.println("I2C Interruption!");
-      // }
-      /* -------------------------------
-         ToFセンサ用タイマー処理ここまで
       ------------------------------- */
 
       // arm状態のインジケータをコントロール
