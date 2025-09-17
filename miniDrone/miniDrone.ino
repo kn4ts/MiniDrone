@@ -105,6 +105,11 @@ void modeDetectionBLE(){
         calibrateSensors();     // センサのバイアス値設定
         initializeController(); // 制御器をリセット
         break;
+      case 'g': // 受信文字が（char型の）'g'なら
+        //calibrateSensors();     // センサのバイアス値設定
+        mode = 30; // ジンバル制御モードへ
+        //initializeController(); // 制御器をリセット
+        break;
       case 'a': // 受信文字が（char型の）'a'ならarm
         arm = true;
         initializeController(); // 制御器をリセット
@@ -304,6 +309,13 @@ void loop() {
             }else{
               uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
             }
+            break;
+          case 30: // 2DoFジンバル（ロールピッチ軸）の姿勢制御モード
+            uc_pointer = gimbalControl_demo( att, alt ); // ジンバル制御を行う
+            uc[0] = uc_pointer[0]; // 制御器出力をucにセット
+            uc[1] = uc_pointer[1];
+            uc[2] = uc_pointer[2];
+            uc[3] = uc_pointer[3];
             break;
           default: // mode のデフォルト設定
             uc_pointer = setUc( 0, 0, 0, 0 ); break; // 全入力を0に

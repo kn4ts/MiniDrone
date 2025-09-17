@@ -77,10 +77,11 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				mble.sendMessage('a'); % arm状態コマンド
 			case 7 % 7秒後に
 				% !! ↓のアイドリングコマンドを送信するとプロペラが回転するので注意 !!
-				% mble.sendMessage('i'); % アイドリングコマンド
+				mble.sendMessage('i'); % アイドリングコマンド
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
 				% mble.sendMessage('s'); % 制御開始コマンド
+				mble.sendMessage('g'); % ジンバル制御開始コマンド
 		end
 	end
 
