@@ -8,21 +8,21 @@
 #include "../inc/Control.h"
 
 // 目標値
-static float ref_alt = 20;  // 高度目標値[mm]
-static float ref_rol = 0;   // ロール目標値[degree?]
-static float ref_pit = 0;   // ピッチ目標値[degree?]
-static float ref_yaw = 0;   // ヨー目標値[degree?]
+static float ref_alt = 20;  // 高度目標値[mm]の初期値
+static float ref_rol = 0;   // ロール目標値[degree]の初期値
+static float ref_pit = 0;   // ピッチ目標値[degree]の初期値
+static float ref_yaw = 0;   // ヨー目標値[degree]の初期値
 
 /* 制御器ゲイン */
 // 高度ゲイン
-static AltGain altK = { 0.2, 0.05, 0.03 };
+static AltGain altK = { 0.2, 0.05, 0.03 }; // 高度制御器ゲインの構造体（P, I, D の順）
 // ロール角度ゲイン
-static RollGain rolK = { 2.0, 0.0, 0.5 };
+static RollGain rolK = { 2.0, 0.0, 0.5 }; // ロール角度ゲインの構造体（P, I, D の順）
 // ピッチ角度ゲイン
-static PitchGain pitK = { 2.0, 0.0, 0.5 };
+static PitchGain pitK = { 2.0, 0.0, 0.5 }; // ピッチ角度ゲインの構造体（P, I, D の順）
 
 // ロール・ピッチ方向PID制御器出力の最小・最大値
-static float controller_output_max = 10.0 ;
+static float controller_output_max = 10.0 ; // 試行錯誤
 
 /* 制御器の内部変数 */
 static AltVariable alt = { 0, 0, 0, 0, 0, 0 }; // 高度に関するもの
@@ -38,8 +38,11 @@ static float cont_force[4] = { 0, 0, 0, 0} ; // 要求制御力をまとめる�
 // 制御器出力
 static float uc[4] = { 0, 0, 0, 0}; // 制御器出力の配列
 // バイアス入力
-static float u_bias[4] = {20+6,20+6,20+7,20+9}; // ロータのバランス補正入力，試行錯誤
-static float u_idle[4] = {80,80,80,80}; // アイドリング時の入力
+static float u_bias = 20; // ホバリングのためのバイアス入力成分，試行錯誤
+// オフセット入力
+static float u_offset[4] = {6,6,7,9}; // モータ個体差の補償のためのオフセット入力，試行錯誤
+// アイドリング時の入力
+static float u_idle = 10 ; // アイドリング時の入力
 
 // 制御器実装用の変数
 static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
@@ -131,20 +134,83 @@ float* controller_demo( float* y, float distance ){
     return &uc[0];
 }
 
+// Gimbal control (2DoF: roll, pitch)
+float* gimbalControl_demo( float* y, float distance ){
+
+    // 時間算出
+    currTime = millis(); // 現在時刻の取得
+    deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算，最大でも0.02[s]に制限
+    prevTime = currTime; // 前回時刻を更新
+
+    /* -------------------------------
+        信号の更新
+    ------------------------------- */ 
+    // ロール角度情報
+    rol.filt = lowpassFilterRoll_demo( rol.filt_prev, y[0] ) ; // ロール角計測値にローパスフィルタをかける
+    //
+    //rol.e = ref_rol -y[0] ; // 現在の誤差
+    rol.e = ref_rol -rol.filt ; // 現在の誤差
+    rol.ed = ( rol.e -rol.e_prev ) / deltaTime ; // 誤差を数値微分
+    rol.ei += rol.e * deltaTime ; // 誤差の積分
+    //
+    rol.e_prev = rol.e ; // 1ステップ前のロール角誤差を更新
+    rol.filt_prev = rol.filt ; // 1ステップ前のフィルタ処理後のロール角を更新
+
+    // ピッチ角度情報
+    pit.filt = lowpassFilterPitch_demo( pit.filt_prev, y[1] ) ; // ピッチ角計測値にローパスフィルタをかける
+    //
+    //pit.e = ref_pit -y[1] ; // 誤差
+    pit.e = ref_pit -pit.filt ; // 誤差
+    pit.ed = ( pit.e -pit.e_prev ) / deltaTime ; // 誤差の数値微分
+    pit.ei += pit.e * deltaTime ; // 誤差の積分
+    //
+    pit.e_prev = pit.e ; // 1ステップ前のピッチ角誤差を更新
+    pit.filt_prev = pit.filt ; // 1ステップ前のフィルタ処理後のピッチ角を更新
+
+    // ヨー角度情報
+    yaw.filt = lowpassFilterYaw_demo( yaw.filt_prev, y[2] ) ; // ヨー角計測値にローパスフィルタをかける
+
+    // 高度情報
+    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
+    alt.filt = compensationWithAttitude( alt.filt, rol.filt, pit.filt );
+
+    // 要求制御力の計算
+    float tau_rol = rolK.p * rol.e + rolK.i * rol.ei + rolK.d * rol.ed ; // ロール方向
+    float tau_pit = pitK.p * pit.e + pitK.i * pit.ei + pitK.d * pit.ed ; // ピッチ方向
+    float tau_yaw = 0.0 ;
+    float f_total = 0.0 ; // 高度方向 制御力は0
+
+    // 制御器出力の飽和
+    tau_rol = saturate_controller_rollpitch( tau_rol );
+    tau_pit = saturate_controller_rollpitch( tau_pit );
+
+    // ミキシング（分配）
+    allocator_demo( tau_rol, tau_pit, tau_yaw, f_total );
+
+    // 変数保存&更新
+    cont_force[0] = tau_rol;
+    cont_force[1] = tau_pit;
+    cont_force[2] = tau_yaw;
+    cont_force[3] = f_total;
+
+    // 計算した制御入力（PWM値）の配列の先頭アドレスを返す
+    return &uc[0];
+}
+
 // 分配器の実装例
 void allocator_demo( float t_r, float t_p, float t_y, float f_t ){
-    uc[0] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[0] + u_idle[0] ;
-    uc[1] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[1] + u_idle[1] ;
-    uc[2] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias[2] + u_idle[2] ;
-    uc[3] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias[3] + u_idle[3] ;
+    uc[0] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[0] ;
+    uc[1] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[1] ;
+    uc[2] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[2] ;
+    uc[3] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[3] ;
 }
 
 // アイドリング入力
 float* idle_thrust(){
-    uc[0] = u_idle[0] ;
-    uc[1] = u_idle[1] ;
-    uc[2] = u_idle[2] ;
-    uc[3] = u_idle[3] ;
+    uc[0] = u_idle ;
+    uc[1] = u_idle ;
+    uc[2] = u_idle ;
+    uc[3] = u_idle ;
 
     return &uc[0];
 }

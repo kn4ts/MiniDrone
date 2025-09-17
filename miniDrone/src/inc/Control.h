@@ -44,6 +44,9 @@
     float lowpassFilterPitch_demo( float pit_filt_prev, float pit ); // ピッチ角について
     float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ); // ヨー角について
 
+    // ジンバル制御の実装例
+    float* gimbalControl_demo(float* y, float distance);
+
     // 姿勢角度による高度計測値の補正
     float compensationWithAttitude(float y, float phi, float theta);
 
