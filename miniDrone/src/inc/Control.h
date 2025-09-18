@@ -52,6 +52,9 @@
 
     float* idle_thrust(); // アイドリング入力の生成
 
+    float* test_roll( float* att ); // ロール角テスト
+    float* test_pitch( float* att ); // ピッチ角テスト
+
     float saturate_controller_rollpitch( float u );
 
     void setAltitudeReference(float ref) ; // 高度指令値のセッタ

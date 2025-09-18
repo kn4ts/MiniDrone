@@ -215,6 +215,29 @@ float* idle_thrust(){
     return &uc[0];
 }
 
+/* ロール角テスト */
+float* test_roll( float* att ){
+    if(0<att[0]){ // ロール角が正なら
+      uc[0] = 20 ; uc[1] = 20 ; uc[2] = 0 ; uc[3] = 0 ;
+    }else if(0>att[0]){ // ロール角が負なら
+      uc[0] = 0 ; uc[1] = 0 ; uc[2] = 20 ; uc[3] = 20 ;
+    }else{
+      uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
+    }
+    return &uc[0];
+}
+/* ピッチ角テスト */
+float* test_pitch( float* att ){
+    if(0<att[1]){ // ピッチ角が正なら
+      uc[0] = 0 ; uc[1] = 20 ; uc[2] = 20 ; uc[3] = 0 ;
+    }else if(0>att[1]){ // ピッチ角が負なら
+      uc[0] = 20 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 20 ;
+    }else{
+      uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
+    }
+    return &uc[0];
+}
+
 //
 float saturate_controller_rollpitch( float u ){
     if (  controller_output_max < u ){ u =  controller_output_max; };
