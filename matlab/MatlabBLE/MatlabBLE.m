@@ -78,7 +78,8 @@ classdef MatlabBLE
 		%end
 		function sendMessage( obj, str )
 			try
-				write( obj.chara_send, uint8(str) );
+				%write( obj.chara_send, uint8(str) );
+				write( obj.chara_send, uint8(char(str)) );
 			catch ME
 				disp( "BLE send error" );
 			end

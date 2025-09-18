@@ -1,179 +1,22 @@
-/*
+/* ==================================================================
   メインのソースコード
-*/
-#include "src/inc/Serial.h" // シリアル通信用のヘッダファイル
-#include "src/inc/BLE.h"  // BLE通信用のヘッダファイル
-#include "src/inc/ControlTimer.h" // タイマー用のヘッダファイル
-#include "src/inc/IntegratedIMU.h"  // 内臓IMU用のヘッダファイル
-#include "src/inc/SensorI2C.h"  // I2C接続用のヘッダファイル
-#include "src/inc/Actuator.h" // アクチュエータ（PWM指令）のヘッダファイル
-
-#include "src/inc/Control.h" // 制御系のヘッダファイル
-
-// 物理ピン関係の変数
-#define STATE_DO D2 // 制御周期確認用のDOポート
-static bool checkTsDO = false ; // 制御周期確認用DOポートの状態変数
-
-// BLE通信用変数
-static char msgSendBLE[192] ;  // BLEで送信するメッセージの格納変数
-
-// 制御用変数定義
-static float* att ;  // 姿勢を格納した配列のポインタ格納用変数
-static float* anv ;  // 角速度を格納した配列のポインタ格納用変数
-static float alt ;   // 高度を格納する変数
-
-static float* mag ;  // 地磁気センサの計測値を格納した配列のポインタ格納用変数
-
-static float* uc_pointer ; // 計算した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
-static int* up_pointer ; // 実際に印加した制御入力（PWM指令値）を格納した配列のポインタ格納用変数
-static float uc[4] = {0,0,0,0} ; // 計算した制御入力（PWM指令値）を格納する配列
-static float u0[4] = {0,0,0,0} ; // すべての要素が0である制御入力（PWM指令値）を格納する配列
-
-static int mode = 0; // モードを保持するための変数
-static bool arm = false; // アーム状態を保持するための変数
-
-/* 参照値指令用カウンタ */
-#define cnt_MAX 30 // [step] (1 step = about 10 ms)
-#define ref_ANGLE 20 // [deg] 角度の目標値の絶対値
-
-// static int cnt_alt = 0; // 高度指令値用（不要？）
-static int cnt_rol = 0; // ロール角度指令値用カウンタ
-static int cnt_pit = 0; // ピッチ角度指令値用カウンタ
-
-/*
-  関数定義 
-*/
-// 制御入力配列（uc）の要素に4つの値をセットする関数
-float* setUc( float u1, float u2, float u3, float u4 ){
-  uc[0] = u1 ; uc[1] = u2 ; uc[2] = u3 ; uc[3] = u4;
-  return &uc[0];
-}
-// BLE通信からの指令を読み取り・解釈する関数
-void modeDetectionBLE(){
-  pollBLE(); // BLEスタックの更新
-  if( true == checkWrittenMessage() ){ // 書き込まれたメッセージを確認し，trueなら指令として読み込む
-    char cmd = getWrittenMessageHead() ; // 読み込んだ先頭文字を取得
-    switch (cmd){
-      // 前進・後退（ピッチ角）
-      case '8': // 受信文字が（char型の）'8'（前進）なら
-        cnt_pit = -cnt_MAX; break; // カウンタを-最大値へ
-      case '2': // 受信文字が（char型の）'2'（後退）なら
-        cnt_pit =  cnt_MAX; break; // カウンタを最大値へ
-      // 左・右（ロール角）
-      case '4': // 受信文字が（char型の）'4'（左）なら
-        cnt_rol = -cnt_MAX; break; // カウンタを最大値へ
-      case '6': // 受信文字が（char型の）'6'（右）なら
-        cnt_rol =  cnt_MAX; break; // カウンタを最大値へ
-
-      case '0': // 受信文字が（char型の）'0'なら
-        mode = 0; // モードを0に変更
-        break;
-      case '1': // 受信文字が（char型の）'1'なら
-        mode = 1; // モードを1に変更
-        break;
-      case '3': // 受信文字が（char型の）'3'なら
-        mode = 3; // モードを3に変更
-        break;
-      case '5': // 受信文字が（char型の）'5'なら
-        mode = 5; // モードを5に変更
-        break;
-      case '7': // 受信文字が（char型の）'7'なら
-        mode = 7; // モードを7に変更
-        break;
-      /* case 'u': // 受信文字が（char型の）'u'（上昇）なら
-        cnt_alt = cnt_MAX; // カウンタを最大値へ
-        break;
-      case 'd': // 受信文字が（char型の）'d'（下降）なら
-        cnt_alt = cnt_MAX; // カウンタを最大値へ
-        break; */
-      case 's': // 受信文字が（char型の）'s'なら
-        mode = 10; // モードを10に変更
-        //setAltitudeReference(100); // 高度目標値をセット
-        //setAltitudeReference(200); // 高度目標値をセット
-        setAltitudeReference(300); // 高度目標値をセット
-        break;
-      case 'i': // 受信文字が（char型の）'i'なら
-        mode = 11; // モードを10に変更
-        break;
-      case 'r': // ロール角動作の確認モード
-        mode = 21; //
-        break;
-      case 'p': // ピッチ角動作の確認モード
-        mode = 22; //
-        break;
-      case 'c': // 受信文字が（char型の）'c'なら
-        calibrateSensors();     // センサのバイアス値設定
-        initializeController(); // 制御器をリセット
-        break;
-      case 'g': // 受信文字が（char型の）'g'なら
-        //calibrateSensors();     // センサのバイアス値設定
-        mode = 30; // ジンバル制御モードへ
-        //initializeController(); // 制御器をリセット
-        break;
-      case 'a': // 受信文字が（char型の）'a'ならarm
-        arm = true;
-        initializeController(); // 制御器をリセット
-        break;
-      default:
-        mode = 0; // モード0に戻す
-        arm = false; // disarm
-        initializeController(); // 制御器をリセット
-        uc_pointer = setUc( 0, 0, 0, 0 ); // 制御器出力をすべて0に
-        break;
-    }
-  }
-}
-//
-// BLEで送信するメッセージを作成する関数
-void setMsgSendBLE( unsigned long t, float* att, float* mag, float alt, float* cf,
-                float alt_f, float rol_f, float pit_f, float yaw_f,
-                float ref_a, float ref_r, float ref_p ){
-  //char msgBLE[192] ;  // BLEで送信するメッセージの格納変数
-  sprintf(msgSendBLE,
-      "%d,"                 // マイコン内時間[ms]
-      "%.2f,%.2f,%.2f,"     // 姿勢角（ロール，ピッチ，ヨーの順）
-      "%.2f,%.2f,%.2f,"     // フィルタ後の姿勢角（ロール，ピッチ，ヨーの順）
-      "%.2f,%.2f,"          // 高度[mm], 高度フィルタ値[mm]
-      "%.1f,%.1f,%.1f,%.1f,"// 制御器出力1~4
-      "%.1f,%.1f,%.1f,%.1f,"// 要求制御力(ロール，ピッチ，ヨー，総推力の順)
-      "%.1f,%.1f,%.1f,"     // 高度指令値，ロール指令値，ピッチ指令値
-      "%d,%d",              // モード，アーム状態
-      t,
-      att[0],att[1],att[2],
-      rol_f,pit_f,yaw_f,
-      alt, alt_f,
-      uc[0],uc[1],uc[2],uc[3],
-      cf[0],cf[1],cf[2],cf[3],
-      ref_a,ref_r,ref_p,
-      mode, arm);
-}
-
-// 制御周期確認用のDO切り替え関数
-void toggleDO(){
-  checkTsDO = !checkTsDO ;  // フラグを切り替え
-  if( checkTsDO ){
-    digitalWrite( STATE_DO, HIGH ); // DOピンをHIGHに
-  }else{
-    digitalWrite( STATE_DO, LOW ); // DOピンをLOWに
-  }
-}
-
-// センサのキャリブレーション（センサ値のバイアス処理）関数
-void calibrateSensors(){ setAttBias(); setAnvBias(); setAltBias(); }
+================================================================== */
+#include "src/inc/miniDrone.h" // 全体のヘッダファイル
 
 
-/*
+/* ==================================================================
   セットアップ関数
-*/
+================================================================== */
 void setup() {
-  // ピンモードの初期設定
+  /* 出力ピンの設定 */
   pinMode( LED_BUILTIN, OUTPUT ); // 内臓LEDの設定（デバッグ用）
   pinMode( STATE_DO, OUTPUT );  // 制御周期確認用DOポートの設定（デバッグ用）
+  setupPWMpin(); // PWM出力ピンの初期化
 
-  // シリアル通信の初期設定
+  /* シリアル通信の初期設定 */
   openSerial();
 
-  // BLEの初期設定
+  /* BLEの初期設定 */
   if( !setupBLE() ){
     // 失敗したらエラー表示で止まる
     while(1){
@@ -182,10 +25,10 @@ void setup() {
     };
   }
 
-  // タイマーの初期設定
+  /* タイマーの初期設定 */
   setupTimer();
 
-  // 内臓IMUの初期化
+  /* 内臓IMUの初期化 */
   if( !initIMU() ){
     // 失敗したらエラー表示で止まる
     while(1){
@@ -197,33 +40,81 @@ void setup() {
     };
   }
 
-  // I2C接続のセンサの初期設定
+  /* I2Cセンサの初期化 */
   if( !initSensorI2C() ){
     // 失敗したらエラー表示
     Serial.println("I2C sensor setup error!");
     delay(2000);
   }
 
-  // アクチュエータ（モータ）の初期設定
-  setupPWMpin();
 }
 
-/* メインループ */
+/* ==================================================================
+  メインループ関数
+================================================================== */
 void loop() {
+  /* BLE接続を試行する */
   listenBLE(); // セントラル機器との接続確認
   pollBLE(); // BLEスタックの更新
 
+  /* BLE接続されていたら実行される部分 */
   if ( isConnectedToPeripheral() ){ // セントラルがペリフェラルに接続されているかの確認
-    while ( centralStillConnected() ){  // セントラルが接続されている間ループ
+    /* BLEセントラルに接続されている間ループ */
+    while ( centralStillConnected() ){
 
       // BLE通信の指令の受信・解釈
-      modeDetectionBLE();
+      mode = modeDetectionBLE();
+
+      // モードに応じた動作（一度きり実行）
+      switch (mode){
+        // 制御開始準備
+        case MODE_CONTROL_STANDBY:  // mode が CONTROL_STANDBY なら
+          setAltitudeReference(300); mode = MODE_CONTROL; break; // 高度目標値をセット・モードをCONTROLへ移行
+        
+        // センサキャリブレーション
+        case MODE_CALIBRATE: // センサキャリブレーション
+          calibrateSensors(); mode = MODE_NORMAL; break;
+
+        // Arm
+        case MODE_ARM:
+          armDrone();
+          //arm = true;
+          initializeController(); // 制御器をリセット
+          mode = MODE_NORMAL; break;
+
+        /* 目標値セット */
+        case MODE_FORWARD:
+          cnt_pit = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを-最大値へ
+        case MODE_BACKWARD:
+          cnt_pit =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        case MODE_LEFT:
+          cnt_rol = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        case MODE_RIGHT:
+          cnt_rol =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+
+        /* 停止モード */
+        case MODE_STOP: 
+          disarmDrone();
+          break;
+
+        /* 上記以外の場合はスルー */
+        default:
+          //initializeController(); // 制御器をリセット
+          //uc_pointer = setUc( 0, 0, 0, 0 ); // 制御器出力をすべて0に
+          break;
+      }
+
 
       /* -------------------------------
          制御周期タイマー処理のはじまり
       ------------------------------- */
       if ( getTmConFlag() ){
-        setTmConFlag(false); // フラグをおろす
+        setTmConFlag(false); // タイマー割込みフラグをおろす
+
+        /*
+          指令値カウンタの確認・処理
+        */ 
+        updateRollPitchReference( cnt_rol, cnt_pit ); // ロール・ピッチ角指令値の更新
 
         // IMUセンサ値を用いた姿勢角の更新
         updateIMUAttitudeVal();
@@ -233,10 +124,9 @@ void loop() {
         // 地磁気計測値を取得
         mag = getIMUMag(); 
 
-        // 測距センサから届いている最新の高度を取得
+        /* ToFセンサから届いている最新の高度を取得 */
         if ( getToFFlag() ){
-          setToFFlag(false); // フラグをおろす
-
+          setToFFlag(false); // ToFセンサフラグをおろす
           // 注意：測定値が準備できていないとブロックする
           updateAltitudeVal();
           alt = getAltitudeVal_wo_b();
@@ -245,84 +135,79 @@ void loop() {
         /*
           高度・姿勢の異常検知
         */
-       if( alt > 2000 ){ mode = 0; };       // 高度計測値が異常ならモードを0に
-       if( abs(att[0]) > 90 ){ mode = 0; }; // ロール角が異常ならモードを0に
-       if( abs(att[1]) > 90 ){ mode = 0; }; // ピッチ角が異常ならモードを0に
-       //if( abs(att[2]) > 90 ){ mode = 0; };
+       if( abs(att[0]) > 90 ){ mode = MODE_STOP; }; // ロール角が異常ならモードを0に
+       if( abs(att[1]) > 90 ){ mode = MODE_STOP; }; // ピッチ角が異常ならモードを0に
 
         /*
-          指令値カウンタの確認・処理
-        */ 
-        // ロール角について
-        if( cnt_rol > 0 ){
-          setRollReference( ref_ANGLE ); // ロール角目標値を＋方向へ
-          --cnt_rol ;
-        }else if( cnt_rol < 0 ){
-          setRollReference( -ref_ANGLE ); // ロール角目標値をー方向へ
-          ++cnt_rol ;
-        }else{ setRollReference( 0 ); }; // ロール角目標値を0へ
-        // ピッチ角について
-        if( cnt_pit > 0 ){
-          setPitchReference( ref_ANGLE ); // ピッチ角目標値を＋方向へ
-          --cnt_pit ;
-        }else if( cnt_pit < 0 ){
-          setPitchReference( -ref_ANGLE ); // ピッチ角目標値をー方向へ
-          ++cnt_pit ;
-        }else{ setPitchReference( 0 ); }; // ピッチ角目標値を0へ
-
-        /*
-          ここに制御則を実装する
+          モードに応じた動作（継続実行）
+          モードの一つとして制御則を実装する
         */
         switch (mode){
-          case 0: // mode が 0 ならロータ停止
+          /* 停止モード */
+          case MODE_STOP: // mode が 0 ならロータ停止
+            disarmDrone();  // ドローンをディスアーム
             uc_pointer = setUc( 0, 0, 0, 0 ); break;
-          case 1: // mode が 1 ならロータに一律20の出力
+
+          /* 全モータの動作テストモード */
+          case MODE_TEST_ALL_MOTORS:
             uc_pointer = setUc( 20, 20, 20, 20 ); break; // 全モータをPWM値20で回す指令
-          case 10: // mode が 10 なら制御実行
-            uc_pointer = controller_demo( att, alt ); // 制御則を使用
+          
+          /* 制御モード */
+          case MODE_CONTROL: // mode が 10 なら制御実行
+            // 制御モード時の異常検知
+            if( alt > 2000 ){ mode = MODE_STOP; };       // 高度計測値が異常ならモードを0に
+
+            // 制御則の計算
+            uc_pointer = controller_demo( att, alt ); // 制御則関数
             uc[0] = uc_pointer[0]; // 制御器出力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];
             uc[3] = uc_pointer[3];
             break;
-          case 11: // mode が 11 ならアイドリング
-            uc_pointer = idle_thrust( ); // アイドリングを行う
+          
+          /* ジンバル制御モード */
+          case MODE_GIMBAL_ROLL_PITCH: // 2DoFジンバル（ロールピッチ軸）の姿勢制御モード
+            uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
+            uc[0] = uc_pointer[0]; // 制御器出力をucにセット
+            uc[1] = uc_pointer[1];
+            uc[2] = uc_pointer[2];
+            uc[3] = uc_pointer[3];
+            break;
+          
+          /* アイドリングモード */
+          case MODE_IDLE:
+            uc_pointer = idle_thrust( ); // アイドル推力をセット
             uc[0] = uc_pointer[0]; // アイドリング入力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];
             uc[3] = uc_pointer[3];
             break;
-          case 21: // ロール角動作の確認モード
-            if(0<att[0]){ // ロール角が正なら
-              uc[0] = 20 ; uc[1] = 20 ; uc[2] = 0 ; uc[3] = 0 ;
-            }else if(0>att[0]){ // ロール角が負なら
-              uc[0] = 0 ; uc[1] = 0 ; uc[2] = 20 ; uc[3] = 20 ;
-            }else{
-              uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
-            }
-            break;
-          case 22: // ピッチ角モードの確認モード
-            if(0<att[1]){ // ピッチ角が正なら
-              uc[0] = 0 ; uc[1] = 20 ; uc[2] = 20 ; uc[3] = 0 ;
-            }else if(0>att[1]){ // ピッチ角が負なら
-              uc[0] = 20 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 20 ;
-            }else{
-              uc[0] = 0 ; uc[1] = 0 ; uc[2] = 0 ; uc[3] = 0 ;
-            }
-            break;
-          case 30: // 2DoFジンバル（ロールピッチ軸）の姿勢制御モード
-            uc_pointer = gimbalControl_demo( att, alt ); // ジンバル制御を行う
-            uc[0] = uc_pointer[0]; // 制御器出力をucにセット
+
+          /* ロール角動作の確認モード */
+          case MODE_TEST_ROLL:
+            uc_pointer = test_roll( att );
+            uc[0] = uc_pointer[0]; // 入力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];
             uc[3] = uc_pointer[3];
             break;
+
+          /* ピッチ角動作の確認モード */
+          case MODE_TEST_PITCH:
+            uc_pointer = test_pitch( att );
+            uc[0] = uc_pointer[0]; // 入力をucにセット
+            uc[1] = uc_pointer[1];
+            uc[2] = uc_pointer[2];
+            uc[3] = uc_pointer[3];
+            break;
+          
+          /* 上記以外のモード時 */
           default: // mode のデフォルト設定
             uc_pointer = setUc( 0, 0, 0, 0 ); break; // 全入力を0に
         }
 
         // アクチュエータを駆動する
-        if( arm == true ){
+        if( isArmed() == true ){
           up_pointer = driveActuator( uc_pointer ); // 制御器出力でアクチュエータを駆動
         }else{
           up_pointer = driveActuator( &u0[0] ); // 入力0で駆動
@@ -339,7 +224,7 @@ void loop() {
          BLE通信用タイマー処理のはじまり
       ------------------------------- */
       if ( getTmBleFlag() ){ 
-        setTmBleFlag(false); // タイマー割り込みフラグをおろす
+        setTmBleFlag(false); // BLE割り込みフラグをおろす
 
         // マイコンの中の時刻を取得
         unsigned long currentTime = millis();
@@ -364,25 +249,17 @@ void loop() {
         char msgRecvBLE = getWrittenMessageHead(); // 1文字のメッセージを取得
 
         // シリアル通信でメッセージ送信（デバッグ用）
-        Serial.print(msgRecvBLE); Serial.print(", "); Serial.print(getToFFlag()); Serial.print(", "); Serial.println(alt);
+        //Serial.print(msgRecvBLE); Serial.print(", "); Serial.print(getToFFlag()); Serial.print(", "); Serial.println(alt);
       }
       /* -------------------------------
          BLE通信用タイマー処理ここまで
       ------------------------------- */
-
-      // arm状態のインジケータをコントロール
-      if( arm == true ){
-        digitalWrite( LED_BUILTIN, HIGH);
-      }else{
-        digitalWrite( LED_BUILTIN, LOW);
-        up_pointer = driveActuator( &u0[0] ); // モータ止める
-      }
     }
   }
 
+  mode = MODE_STOP; // モードをリセット
+  disarmDrone(); // ドローンをディスアーム
   uc_pointer = setUc( 0, 0, 0, 0 ); // 入力を初期化
-  arm = false;
-  mode = 0; // モードをリセット
   up_pointer = driveActuator( &u0[0] ); // モータ止める
 
   printNoCentral( getBLEAddress() ); // セントラル機器がないことをシリアルで表示

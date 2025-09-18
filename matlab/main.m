@@ -25,8 +25,58 @@ tm = Timer( 1, EXP_TIME );	% 割り込み周期[s]，実行回数[-]
 % キー割り込み用のクラス
 app = App();
 
-%N = 50;	% ループ回数を設定
+% =======================
+% 送信コマンドの定義
+% 	1. 送信コマンドは，マイコン側の動作を規定するコマンドとする
+%   2. 送信コマンドは，マイコン側で定義されているコマンド"Command"に合わせる必要がある
+% =======================
+COMMAND  = dictionary(); % 辞書型としてCOMMANDを初期化
+COMMAND("none")		= 'n'; % 何もしないコマンド
+COMMAND("stop")		= '0'; % 停止コマンド
+
+COMMAND("arm")		= 'a'; % アームコマンド
+COMMAND("calib")	= 'c'; % キャリブレーションコマンド
+
+% 動作変更コマンド
+COMMAND("control")	= 's'; % 制御開始コマンド
+COMMAND("gimbal")	= 'g'; % ジンバル制御開始コマンド
+
+COMMAND("idle")		= 'i'; % アイドリング（モーター回転）コマンド
+
+% 動作テストコマンド
+COMMAND("test_all_motors") = '1'; % 全モーター動作テストコマンド
+
+COMMAND("test_roll")	= 'r'; % ロール軸方向の動作テストコマンド
+COMMAND("test_pitch")	= 'p'; % ピッチ軸方向の動作テストコマンド
+
+% 目標値変更コマンド
+COMMAND("forward")	= '8'; % 前進指令
+COMMAND("back")		= '2'; % 後退指令
+COMMAND("left")		= '4'; % 左移動指令
+COMMAND("right")	= '6'; % 右移動指令
+
+% 未定義コマンド
+%COMMAND("disarm")	= 'd'; % ディスアーム（モーター停止）コマンド
+%COMMAND("SAFE")	= 'e'; % セーフモード（安全停止モード）への移行コマンド
+
+cmd = COMMAND("none"); % デフォルトは"none"コマンド
+
+% =======================
+% 使用するキーの定義
+% 	1. 左辺は名称（任意の文字列），右辺はキーボードのキー名
+% =======================
+KEY = dictionary(); % 辞書型としてKEYを初期化
+KEY("c")		= 'c';		% キャリブレーション指令キー
+KEY("up")		= 'uparrow';	% 前進指令キー
+KEY("down")		= 'downarrow';	% 後退指令キー
+KEY("left")		= 'leftarrow';	% 左移動指令キー
+KEY("right")	= 'rightarrow';	% 右移動指令キー
+
+% =======================
+% 変数の初期化
+% =======================
 i = 0 ; % カウンタ
+
 %=======================
 %	メインループ
 %=======================
@@ -37,31 +87,38 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 		str = "key pressed ... " + keyPressed ;
 		disp( str );
 
-		% 押されたキーに応じた指令送信
+		% 押されたキーに応じた指令をセット
 		switch keyPressed
-			case 'downarrow'
-				cmd = '2'; % 後退指令
-			case 'uparrow'
-				cmd = '8'; % 前進指令
-			case 'leftarrow'
-				cmd = '4'; % 左移動指令
-			case 'rightarrow'
-				cmd = '6'; % 右移動指令
-			case 'c'
-				cmd = 'c'; % キャリブレーション
+			% 基本動作モード変更の指令
+			case KEY("c")
+				cmd = COMMAND("calib"); % キャリブレーション指令をセット
+
+			% 目標値変更の指令
+			case KEY("down")
+				cmd = COMMAND("back"); % 後退指令
+			case KEY("up")
+				cmd = COMMAND("forward"); % 前進指令
+			case KEY("left")
+				cmd = COMMAND("left"); % 左移動指令
+			case KEY("right")
+				cmd = COMMAND("right"); % 右移動指令
+
+			% 上記以外のキーが押された場合
 			otherwise
-				break;	% それ以外ならループ抜ける
+				break;	% それ以外ならループ抜ける -> 停止指令
 		end
 
+		% 指令を送信
 		mble.sendMessage( cmd );	% BLE通信でメッセージ送信
-		cmd = '';
+		cmd = '';	% 送信コマンドをリセット
+
 		pause(0.1);	% 一時停止
-		app.setReadFlag(0); % フラグおろす
+		app.setReadFlag(0); % キー入力フラグおろす
 	end
 
 	% タイマー間隔で実行する部分
 	if tm.getFlagVal() > 0 % タイマーフラグをチェック
-		tm.setFlagVal(0); % フラグおろす
+		tm.setFlagVal(0); % タイマーフラグおろす
 		i = i +1; % カウンタをインクリメント
 
 		% 画面表示用の設定
@@ -72,16 +129,21 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 		% ループ回数の途中でメッセージ送信（BLE通信）
 		switch i
 			case 3	% 3秒後に
-				mble.sendMessage('c'); % キャリブレーションコマンド
+				cmd = COMMAND("calib");  % キャリブレーション指令をセット
+				mble.sendMessage( cmd ); % 指令送信
 			case 5 % 5秒後に
-				mble.sendMessage('a'); % arm状態コマンド
+				% !! ↓のArmコマンドを送信するとプロペラが回転する前段階になるので注意 !!
+				cmd = COMMAND("arm"); % arm状態コマンド
+				mble.sendMessage( cmd ); % 指令送信
 			case 7 % 7秒後に
 				% !! ↓のアイドリングコマンドを送信するとプロペラが回転するので注意 !!
-				mble.sendMessage('i'); % アイドリングコマンド
+				cmd = COMMAND("idle"); % アイドリングコマンド
+				mble.sendMessage( cmd ); % 指令送信
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
-				% mble.sendMessage('s'); % 制御開始コマンド
-				mble.sendMessage('g'); % ジンバル制御開始コマンド
+				%cmd = COMMAND("control"); % 制御開始コマンド
+				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
+				mble.sendMessage( cmd ); % 指令送信
 		end
 	end
 
@@ -91,16 +153,27 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 	pause(0.0001);	% 一時停止
 end
 
-mble.sendMessage('d');	% 停止指令を送信
+% =======================
+%  ドローン側の動作停止処理
+% =======================
+cmd = COMMAND("stop"); % 停止指令をセット
+mble.sendMessage( cmd ); % 指令送信
 pause(0.5);	% 一時停止
 
+%=======================
+%	後処理
+%=======================
 close gcf; % 図の終了
 
 unsubscribe(mble.chara_read) % データ受信の購読を解除
 clear mble	 % BLE通信のインスタンスを削除
 
+%=======================
+%	結果表示
+%=======================
 shapedata()	% データの整形関数の呼び出し
 showplot()	% データのプロット関数の呼び出し
+
 
 %=======================
 %	関数定義
