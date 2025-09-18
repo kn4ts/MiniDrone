@@ -12,70 +12,138 @@ df = DataFile( OUTPUT_FOLDER ) % データロガークラスのインスタン�
 
 % BLE通信の設定
 %ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
-ID = "5BEE875C506D"; % Bluetooth MAC アドレス
+ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
 mble = MatlabBLE( ID )	% BLE通信のインスタンス生成
 
 f = genCallbackFunction( mble, df ); % BLE受信により起動させるコールバック関数を生成
-mble.chara_read.DataAvailableFcn = f;
+mble.chara_read.DataAvailableFcn = f; % BLEデータ受信時のコールバック関数を設定
 
 % タイマー機能の設定
-EXP_TIME = 30 ;	% 最大実験時間の設定[s]
+EXP_TIME = 3000 ;	% 最大実験時間の設定[s]
 tm = Timer( 1, EXP_TIME );	% 割り込み周期[s]，実行回数[-]
 
 % キー割り込み用のクラス
 app = App();
 
-%N = 50;	% ループ回数を設定
+% =======================
+% 送信コマンドの定義
+% 	1. 送信コマンドは，マイコン側の動作を規定するコマンドとする
+%   2. 送信コマンドは，マイコン側で定義されているコマンド"Command"に合わせる必要がある
+% =======================
+COMMAND  = dictionary(); % 辞書型としてCOMMANDを初期化
+COMMAND("none")		= 'n'; % 何もしないコマンド
+COMMAND("stop")		= '0'; % 停止コマンド
+
+COMMAND("arm")		= 'a'; % アームコマンド
+COMMAND("calib")	= 'c'; % キャリブレーションコマンド
+
+% 動作変更コマンド
+COMMAND("control")	= 's'; % 制御開始コマンド
+COMMAND("gimbal")	= 'g'; % ジンバル制御開始コマンド
+
+COMMAND("idle")		= 'i'; % アイドリング（モーター回転）コマンド
+
+% 動作テストコマンド
+COMMAND("test_all_motors") = '1'; % 全モーター動作テストコマンド
+
+COMMAND("test_roll")	= 'r'; % ロール軸方向の動作テストコマンド
+COMMAND("test_pitch")	= 'p'; % ピッチ軸方向の動作テストコマンド
+
+% 目標値変更コマンド
+COMMAND("forward")	= '8'; % 前進指令
+COMMAND("back")		= '2'; % 後退指令
+COMMAND("left")		= '4'; % 左移動指令
+COMMAND("right")	= '6'; % 右移動指令
+
+% 未定義コマンド
+%COMMAND("disarm")	= 'd'; % ディスアーム（モーター停止）コマンド
+%COMMAND("SAFE")	= 'e'; % セーフモード（安全停止モード）への移行コマンド
+
+cmd = COMMAND("none"); % デフォルトは"none"コマンド
+
+% =======================
+% 使用するキーの定義
+% 	1. 左辺は名称（任意の文字列），右辺はキーボードのキー名
+% =======================
+KEY = dictionary(); % 辞書型としてKEYを初期化
+KEY("c")		= 'c';		% キャリブレーション指令キー
+KEY("up")		= 'uparrow';	% 前進指令キー
+KEY("down")		= 'downarrow';	% 後退指令キー
+KEY("left")		= 'leftarrow';	% 左移動指令キー
+KEY("right")	= 'rightarrow';	% 右移動指令キー
+
+% =======================
+% 変数の初期化
+% =======================
 i = 0 ; % カウンタ
+
 %=======================
 %	メインループ
 %=======================
 while( tm.t.Running == "on" ) % タイマーが有効である間ループ
-%for i=1:N
+	% キー入力のチェック
 	if app.getReadFlag() > 0
 		keyPressed = app.getReadChara(); % 押されたキーを取得
 		str = "key pressed ... " + keyPressed ;
 		disp( str );
 
-		% 押されたキーに応じた指令送信
+		% 押されたキーに応じた指令をセット
 		switch keyPressed
-			case 'downarrow'
-				cmd = '2'; % 後退指令
-			case 'uparrow'
-				cmd = '8'; % 前進指令
-			case 'leftarrow'
-				cmd = '4'; % 左移動指令
-			case 'rightarrow'
-				cmd = '6'; % 右移動指令
+			% 基本動作モード変更の指令
+			case KEY("c")
+				cmd = COMMAND("calib"); % キャリブレーション指令をセット
+
+			% 目標値変更の指令
+			case KEY("down")
+				cmd = COMMAND("back"); % 後退指令
+			case KEY("up")
+				cmd = COMMAND("forward"); % 前進指令
+			case KEY("left")
+				cmd = COMMAND("left"); % 左移動指令
+			case KEY("right")
+				cmd = COMMAND("right"); % 右移動指令
+
+			% 上記以外のキーが押された場合
 			otherwise
-				break;	% それ以外ならループ抜ける
+				break;	% それ以外ならループ抜ける -> 停止指令
 		end
 
+		% 指令を送信
 		mble.sendMessage( cmd );	% BLE通信でメッセージ送信
-		cmd = '';
+		cmd = '';	% 送信コマンドをリセット
+
 		pause(0.1);	% 一時停止
-		app.setReadFlag(0); % フラグおろす
+		app.setReadFlag(0); % キー入力フラグおろす
 	end
 
-	% タイマー間隔で実行する関数
-	if tm.getFlagVal() > 0
-		tm.setFlagVal(0); % フラグおろす
-		i = i +1;
+	% タイマー間隔で実行する部分
+	if tm.getFlagVal() > 0 % タイマーフラグをチェック
+		tm.setFlagVal(0); % タイマーフラグおろす
+		i = i +1; % カウンタをインクリメント
 
 		% 画面表示用の設定
 		[ data, time, s ] = mble.getReadData();	% BLEの受信メッセージを取得
-
 		str = i +": "+ s + ", " + char(data) ; 	% 文字列の整形
-		disp(str);
+		disp(str); % 画面表示
 
-		% ループ回数の途中でメッセージ送信（テスト）
+		% ループ回数の途中でメッセージ送信（BLE通信）
 		switch i
-			case 3	% キャリブレーション
-				mble.sendMessage('c');	% BLE通信でメッセージ送信
-			case 5 % アーム
-				mble.sendMessage('a');
-			case 7 % 制御開始
-				mble.sendMessage('s');
+			case 3	% 3秒後に
+				cmd = COMMAND("calib");  % キャリブレーション指令をセット
+				mble.sendMessage( cmd ); % 指令送信
+			case 5 % 5秒後に
+				% !! ↓のArmコマンドを送信するとプロペラが回転する前段階になるので注意 !!
+				cmd = COMMAND("arm"); % arm状態コマンド
+				mble.sendMessage( cmd ); % 指令送信
+			case 7 % 7秒後に
+				% !! ↓のアイドリングコマンドを送信するとプロペラが回転するので注意 !!
+				cmd = COMMAND("idle"); % アイドリングコマンド
+				mble.sendMessage( cmd ); % 指令送信
+			case 8 % 8秒後に
+				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
+				%cmd = COMMAND("control"); % 制御開始コマンド
+				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
+				mble.sendMessage( cmd ); % 指令送信
 		end
 	end
 
@@ -85,13 +153,27 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 	pause(0.0001);	% 一時停止
 end
 
-mble.sendMessage('d');	% 停止指令を送信
+% =======================
+%  ドローン側の動作停止処理
+% =======================
+cmd = COMMAND("stop"); % 停止指令をセット
+mble.sendMessage( cmd ); % 指令送信
 pause(0.5);	% 一時停止
 
+%=======================
+%	後処理
+%=======================
 close gcf; % 図の終了
 
-unsubscribe(mble.chara_read)
-clear mble
+unsubscribe(mble.chara_read) % データ受信の購読を解除
+clear mble	 % BLE通信のインスタンスを削除
+
+%=======================
+%	結果表示
+%=======================
+shapedata()	% データの整形関数の呼び出し
+showplot()	% データのプロット関数の呼び出し
+
 
 %=======================
 %	関数定義
@@ -100,7 +182,6 @@ clear mble
 function f = genCallbackFunction( mble, df )
 	
 	% コールバック関数の定義
-	%function callback( src, evt, da, ti, se )
 	function callback( src, evt )
 		if mble.isReading.getVal()
 			disp("BLE is reading");
@@ -120,12 +201,18 @@ function f = genCallbackFunction( mble, df )
 			% データの通し番号をインクリメント
 			mble.snum.setVal( mble.snum.getVal() +1 );
 
-			str = [ num2str(mble.snum.getVal()), ',', char(mble.time.getVal()), ',', char(mble.time_e.getVal()), ...
-				',', char(mble.data.getVal()) ];
+			% 保存用文字列の生成
+			str = [ ...
+					num2str(mble.snum.getVal()), ',', ...	% 受信データの通し番号
+					char(mble.time.getVal()), ',', ...	 	% 受信時刻(PC時刻)
+					char(mble.time_e.getVal()), ',', ...	% 経過時間(PC時刻)
+					char(mble.data.getVal()) ...			% 受信データ
+				];
 
 			df.outputDataStr( str ); % データをファイルに出力
 			mble.isReading.setVal(false);	% 読み込みフラグをおろす
 		end
 	end
-	f = @callback ;
+
+	f = @callback ; % 定義したコールバック関数を返す
 end
