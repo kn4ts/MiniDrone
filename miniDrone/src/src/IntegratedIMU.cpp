@@ -48,11 +48,7 @@ bool initIMU(){
     if (!IMU.begin()){ state = false; } // 初期化に失敗すると戻り値をfalseに設定
 
     // 初回計測でジャイロセンサのバイアスを取得
-    while(!IMU.accelerationAvailable() || !IMU.gyroscopeAvailable()){
-      // 加速度計とジャイロが利用可能になるまで待つ
-      delay(10);
-    }
-    IMU.readGyroscope(imu_gy_bias[0], imu_gy_bias[1], imu_gy_bias[2]); // ジャイロ計測値を取得
+    calibrateGyroBias();
 
     return state;
 }
@@ -207,6 +203,17 @@ void updateIMUGyroscope(){
         IMU.readGyroscope(imu_gy[0], imu_gy[1], imu_gy[2]);
     }
 }
+
+// ジャイロセンサのバイアスをキャリブレーションする関数
+void calibrateGyroBias(){
+    // 初回計測でジャイロセンサのバイアスを取得
+    while(!IMU.accelerationAvailable() || !IMU.gyroscopeAvailable()){
+      // 加速度計とジャイロが利用可能になるまで待つ
+      delay(10);
+    }
+    IMU.readGyroscope(imu_gy_bias[0], imu_gy_bias[1], imu_gy_bias[2]); // ジャイロ計測値を取得
+}
+
 // 姿勢角の現在値をバイアス値にセットする関数
 void setAttBias(){
     att_bias[0] = attitude[0];

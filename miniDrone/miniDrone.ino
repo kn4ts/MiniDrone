@@ -73,7 +73,9 @@ void loop() {
         
         // センサキャリブレーション
         case MODE_CALIBRATE: // センサキャリブレーション
-          calibrateSensors(); mode = MODE_NORMAL; break;
+          calibrateSensors();
+          calibrateGyroBias(); // ジャイロセンサのバイアスを再取得
+          mode = MODE_NORMAL; break;
 
         // Arm
         case MODE_ARM:
@@ -83,14 +85,14 @@ void loop() {
           mode = MODE_NORMAL; break;
 
         /* 目標値セット */
-        case MODE_FORWARD:
-          cnt_pit = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを-最大値へ
-        case MODE_BACKWARD:
-          cnt_pit =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
-        case MODE_LEFT:
-          cnt_rol = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
-        case MODE_RIGHT:
-          cnt_rol =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        //case MODE_FORWARD:
+        //  cnt_pit = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを-最大値へ
+        //case MODE_BACKWARD:
+        //  cnt_pit =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        //case MODE_LEFT:
+        //  cnt_rol = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        //case MODE_RIGHT:
+        //  cnt_rol =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
 
         /* 停止モード */
         case MODE_STOP: 
@@ -169,7 +171,8 @@ void loop() {
           
           /* ジンバル制御モード */
           case MODE_GIMBAL_ROLL_PITCH: // 2DoFジンバル（ロールピッチ軸）の姿勢制御モード
-            uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
+            //uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
+            uc_pointer = gimbalControl_demo( att, anv, alt ); // ジンバル使用時の制御則
             uc[0] = uc_pointer[0]; // 制御器出力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];

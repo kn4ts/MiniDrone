@@ -21,6 +21,8 @@
     void updateIMUAcceleration();
     // 角速度の計測値を更新する関数
     void updateIMUGyroscope();
+    // ジャイロセンサのバイアスをキャリブレーションする関数
+    void calibrateGyroBias();
 
     // 加速度計測値のゲッタ関数
     float* getIMUAcc();

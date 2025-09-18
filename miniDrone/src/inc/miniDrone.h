@@ -55,10 +55,10 @@
         MODE_CALIBRATE  = 31,   // センサキャリブレーションモード
         MODE_ARM        = 32,   // アームモード
 
-        MODE_FORWARD    = 41,   // 前進モード
-        MODE_BACKWARD   = 42,   // 後退モード
-        MODE_LEFT       = 43,   // 左移動モード
-        MODE_RIGHT      = 44,   // 右移動モード
+        //MODE_FORWARD    = 41,   // 前進モード
+        //MODE_BACKWARD   = 42,   // 後退モード
+        //MODE_LEFT       = 43,   // 左移動モード
+        //MODE_RIGHT      = 44,   // 右移動モード
 
         /* 動作 */
         MODE_IDLE       = 11,   // アイドリングモード
