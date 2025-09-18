@@ -8,11 +8,15 @@
 
     #include <Arduino_LSM9DS1.h>
 
+    #define RAD_TO_DEG 57.2957795131f // ラジアン→度変換係数
+    #define DEG_TO_RAD 0.01745329251f // 度→ラジアン変換係数
+
     // IMUの初期化関数
     bool initIMU();
 
     // 姿勢を更新する関数
     void updateIMUAttitudeVal();
+    void updateIMUAttitudeVal_ver2();
     // 加速度の計測値を更新する関数
     void updateIMUAcceleration();
     // 角速度の計測値を更新する関数

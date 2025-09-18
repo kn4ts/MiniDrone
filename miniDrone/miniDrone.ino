@@ -117,12 +117,14 @@ void loop() {
         updateRollPitchReference( cnt_rol, cnt_pit ); // ロール・ピッチ角指令値の更新
 
         // IMUセンサ値を用いた姿勢角の更新
-        updateIMUAttitudeVal();
+        //updateIMUAttitudeVal();
+        updateIMUAttitudeVal_ver2();
+
         // IMUで計算した値を取得
         att = getIMUAttitude_wo_b(); // 姿勢を取得
         anv = getIMUAngularVelocity_wo_b(); // 角速度を取得
         // 地磁気計測値を取得
-        mag = getIMUMag(); 
+        // mag = getIMUMag(); 
 
         /* ToFセンサから届いている最新の高度を取得 */
         if ( getToFFlag() ){
@@ -135,8 +137,8 @@ void loop() {
         /*
           高度・姿勢の異常検知
         */
-       if( abs(att[0]) > 90 ){ mode = MODE_STOP; }; // ロール角が異常ならモードを0に
-       if( abs(att[1]) > 90 ){ mode = MODE_STOP; }; // ピッチ角が異常ならモードを0に
+        if( abs(att[0]) > 90 ){ mode = MODE_STOP; }; // ロール角が異常ならモードを0に
+        if( abs(att[1]) > 90 ){ mode = MODE_STOP; }; // ピッチ角が異常ならモードを0に
 
         /*
           モードに応じた動作（継続実行）
