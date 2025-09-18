@@ -135,12 +135,16 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				% !! ↓のArmコマンドを送信するとプロペラが回転する前段階になるので注意 !!
 				cmd = COMMAND("arm"); % arm状態コマンド
 				mble.sendMessage( cmd ); % 指令送信
+			case 6 % 6秒後に
+				cmd = COMMAND("calib"); %
+				mble.sendMessage( cmd ); % 指令送信
 			case 7 % 7秒後に
 				% !! ↓のアイドリングコマンドを送信するとプロペラが回転するので注意 !!
 				cmd = COMMAND("idle"); % アイドリングコマンド
 				mble.sendMessage( cmd ); % 指令送信
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
+				%cmd = COMMAND("test_roll"); % ロール軸方向の動作テストコマンド
 				%cmd = COMMAND("control"); % 制御開始コマンド
 				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
 				mble.sendMessage( cmd ); % 指令送信
