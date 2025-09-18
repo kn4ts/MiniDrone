@@ -135,7 +135,6 @@ void loop() {
         /*
           高度・姿勢の異常検知
         */
-       if( alt > 2000 ){ mode = MODE_STOP; };       // 高度計測値が異常ならモードを0に
        if( abs(att[0]) > 90 ){ mode = MODE_STOP; }; // ロール角が異常ならモードを0に
        if( abs(att[1]) > 90 ){ mode = MODE_STOP; }; // ピッチ角が異常ならモードを0に
 
@@ -155,6 +154,10 @@ void loop() {
           
           /* 制御モード */
           case MODE_CONTROL: // mode が 10 なら制御実行
+            // 制御モード時の異常検知
+            if( alt > 2000 ){ mode = MODE_STOP; };       // 高度計測値が異常ならモードを0に
+
+            // 制御則の計算
             uc_pointer = controller_demo( att, alt ); // 制御則関数
             uc[0] = uc_pointer[0]; // 制御器出力をucにセット
             uc[1] = uc_pointer[1];

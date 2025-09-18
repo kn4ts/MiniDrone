@@ -20,55 +20,55 @@
     /* 地上局から送られてくるコマンドの定義 */
     enum Command {
         /* 共通コマンド */
-        CMD_COMMAND_NONE = 'n', // 何もしないコマンド
-        CMD_STOP      = '0',  // 停止コマンド
+        CMD_COMMAND_NONE    = 'n',  // 何もしないコマンド
+        CMD_STOP            = '0',  // 停止コマンド
 
-        CMD_ARM      = 'a',   // アームコマンド
-        CMD_CALIBRATE = 'c',  // センサキャリブレーションコマンド
+        CMD_ARM             = 'a',  // アームコマンド
+        CMD_CALIBRATE       = 'c',  // センサキャリブレーションコマンド
 
         /* 動作変更コマンド */
-        CMD_CONTROL = 's',    // 制御開始コマンド
-        CMD_GIMBAL_ROLL_PITCH = 'g',  // 制御開始（ジンバル）コマンド
+        CMD_CONTROL         = 's',  // 制御開始コマンド
+        CMD_GIMBAL_ROLL_PITCH = 'g',// 制御開始（ジンバル）コマンド
 
-        CMD_IDLE      = 'i',  // アイドリングコマンド
+        CMD_IDLE            = 'i',  // アイドリングコマンド
 
         /* 動作テストコマンド */
-        CMD_TEST_ALL_MOTORS = '1',    // 全モータテストコマンド
+        CMD_TEST_ALL_MOTORS = '1',  // 全モータテストコマンド
 
-        CMD_TEST_ROLL = 'r',  // ロール角動作テストコマンド
-        CMD_TEST_PITCH = 'p', // ピッチ角動作テストコマンド
+        CMD_TEST_ROLL       = 'r',  // ロール角動作テストコマンド
+        CMD_TEST_PITCH      = 'p',  // ピッチ角動作テストコマンド
 
-        /* 目標値コマンド */
-        CMD_RIGHT    = '6',   // 右移動コマンド
-        CMD_LEFT     = '4',   // 左移動コマンド
-        CMD_FORWARD  = '8',   // 前進コマンド
-        CMD_BACKWARD = '2'    // 後退コマンド
+        /* 目標値変更コマンド */
+        CMD_RIGHT           = '6',  // 右移動コマンド
+        CMD_LEFT            = '4',  // 左移動コマンド
+        CMD_FORWARD         = '8',  // 前進コマンド
+        CMD_BACKWARD        = '2'   // 後退コマンド
     };
 
     /* フライトコントローラの動作モード */
     enum Mode {
         /* 共通モード */
-        MODE_NORMAL = 2, // 通常モード
-        MODE_STOP = 0, // 停止モード
+        MODE_NORMAL     = 2,    // 通常モード
+        MODE_STOP       = 0,    // 停止モード
 
         /* 一度きり実行動作 */
-        MODE_CALIBRATE = 31, // センサキャリブレーションモード
-        MODE_ARM = 32, // アームモード
+        MODE_CALIBRATE  = 31,   // センサキャリブレーションモード
+        MODE_ARM        = 32,   // アームモード
 
-        MODE_FORWARD = 41, // 前進モード
-        MODE_BACKWARD = 42, // 後退モード
-        MODE_LEFT = 43, // 左移動モード
-        MODE_RIGHT = 44, // 右移動モード
+        MODE_FORWARD    = 41,   // 前進モード
+        MODE_BACKWARD   = 42,   // 後退モード
+        MODE_LEFT       = 43,   // 左移動モード
+        MODE_RIGHT      = 44,   // 右移動モード
 
         /* 動作 */
-        MODE_IDLE = 11, // アイドリングモード
+        MODE_IDLE       = 11,   // アイドリングモード
         MODE_CONTROL_STANDBY = 10, // 制御開始の準備モード
-        MODE_CONTROL = 12, // 制御実行モード
+        MODE_CONTROL    = 12,   // 制御実行モード
         MODE_GIMBAL_ROLL_PITCH = 30, // ジンバル制御モード
 
-        MODE_TEST_ALL_MOTORS = 1, // 全モータテストモード
-        MODE_TEST_ROLL = 21, // ロール角動作テストモード
-        MODE_TEST_PITCH = 22 // ピッチ角動作テストモード
+        MODE_TEST_ALL_MOTORS = 1,  // 全モータテストモード
+        MODE_TEST_ROLL       = 21, // ロール角動作テストモード
+        MODE_TEST_PITCH      = 22  // ピッチ角動作テストモード
     };
 
     // 物理ピン関係の変数
