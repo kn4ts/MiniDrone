@@ -15,6 +15,7 @@
 
     /* 参照値指令用カウンタ */
     #define cnt_MAX 30 // [step] (1 step = about 10 ms)
+    #define cnt_MAX_LONG 3000 // [step] (1 step = about 10 ms)
     #define ref_ANGLE 20 // [deg] 角度の目標値の絶対値
 
     /* 地上局から送られてくるコマンドの定義 */
@@ -42,7 +43,14 @@
         CMD_RIGHT           = '6',  // 右移動コマンド
         CMD_LEFT            = '4',  // 左移動コマンド
         CMD_FORWARD         = '8',  // 前進コマンド
-        CMD_BACKWARD        = '2'   // 後退コマンド
+        CMD_BACKWARD        = '2',  // 後退コマンド
+
+        CMD_ROLL_PLUS      = 'R',  // ロール角目標値を増加させるコマンド
+        CMD_ROLL_MINUS     = 'A',  // ロール角目標値を減少させるコマンド
+        CMD_PITCH_PLUS     = 'P',  // ピッチ角目標値を増加させるコマンド
+        CMD_PITCH_MINUS    = 'L',  // ピッチ角目標値を減少させるコマンド
+
+        CMD_ATTITUDE_NEUTRAL = 'H' // 姿勢目標値を中立に戻すコマンド
     };
 
     /* フライトコントローラの動作モード */

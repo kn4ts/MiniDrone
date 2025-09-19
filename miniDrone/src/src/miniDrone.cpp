@@ -71,6 +71,18 @@ int modeDetectionBLE(){
         //mode = MODE_RIGHT; break;
         cnt_rol =  cnt_MAX; break; // カウンタを最大値へ
 
+      case CMD_ROLL_PLUS: // 受信文字が（char型の）'R'（ロール角目標値増加）なら
+        cnt_rol = cnt_MAX_LONG; cnt_pit = 0; break; // ロール角目標値を増加させる
+      case CMD_ROLL_MINUS: // 受信文字が（char型の）'A'（ロール角目標値減少）なら
+        cnt_rol = -cnt_MAX_LONG; cnt_pit = 0; break; // ロール角目標値を減少させる
+      case CMD_PITCH_PLUS: // 受信文字が（char型の）'P'（ピッチ角目標値増加）なら
+        cnt_pit = cnt_MAX_LONG; cnt_rol = 0; break; // ピッチ角目標値を増加させる
+      case CMD_PITCH_MINUS: // 受信文字が（char型の）'L'（ピッチ角目標値減少）なら
+        cnt_pit = -cnt_MAX_LONG; cnt_rol = 0; break; // ピッチ角目標値を減少させる
+      case CMD_ATTITUDE_NEUTRAL: // 受信文字が（char型の）'H'（姿勢目標値中立）なら
+        cnt_rol = 0 ; cnt_pit = 0 ; break; // 姿勢目標値を中立に戻す
+
+      /* 上記以外の場合は停止 */
       default:
         mode = MODE_STOP; break; // 予期しない文字なら停止モード
     }
