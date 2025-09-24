@@ -6,24 +6,31 @@ addpath 'DataHandle' 	% データハンドルクラスのパスを追加
 addpath 'Timer'		% タイマークラスのパスを追加
 addpath 'App'		% Appクラスのパスを追加
 
+addpath 'HoriRap' % HoriRapクラスのパスを追加
+
 % データロガーの設定
 OUTPUT_FOLDER = "./output/"; % データロガーの出力用フォルダを指定
 df = DataFile( OUTPUT_FOLDER ) % データロガークラスのインスタンス生成
 
 % BLE通信の設定
 %ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
-ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
+% ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
+% ID = "6D09F5206CBC";
+ID = "7A92696EC856";
 mble = MatlabBLE( ID )	% BLE通信のインスタンス生成
 
 f = genCallbackFunction( mble, df ); % BLE受信により起動させるコールバック関数を生成
 mble.chara_read.DataAvailableFcn = f; % BLEデータ受信時のコールバック関数を設定
 
 % タイマー機能の設定
-EXP_TIME = 3000 ;	% 最大実験時間の設定[s]
+EXP_TIME = 50 ;	% 最大実験時間の設定[s]
 tm = Timer( 1, EXP_TIME );	% 割り込み周期[s]，実行回数[-]
 
 % キー割り込み用のクラス
 app = App();
+
+% HoriRapクラスのインスタンス生成
+rap = HoriRap();
 
 % =======================
 % 送信コマンドの定義
@@ -81,6 +88,28 @@ i = 0 ; % カウンタ
 %	メインループ
 %=======================
 while( tm.t.Running == "on" ) % タイマーが有効である間ループ
+
+	% ジョイスティックの入力チェック
+	rap.updateJoyState();	% ジョイスティックの状態更新
+	if rap.checkPOVsChangedXdirection()	% POV（十字キー）のX方向の変化があれば
+		povX = rap.getPOVXdirection();	% POVのX方向の状態を取得
+		switch povX
+			case 1 % right
+				cmd = COMMAND("roll_plus"); % ロール軸の目標値を正に
+			case -1 % left
+				cmd = COMMAND("roll_minus"); % ロール軸の目標値を負に
+			otherwise
+				cmd = COMMAND("att_neutral"); % ロール軸の目標値を水平に
+		end
+		if cmd ~= COMMAND("none")	% 送信コマンドが"none"でなければ
+			mble.sendMessage( cmd );	% BLE通信でコマンド送信
+			str = "POV X direction changed! New POVs: " + povX + ", command sent: " + cmd ;
+			disp( str );	% 画面表示
+			cmd = ''; % 送信コマンドをリセット
+		end
+		pause(0.1);	% 0.1秒待つ
+	end
+
 	% キー入力のチェック
 	if app.getReadFlag() > 0
 		keyPressed = app.getReadChara(); % 押されたキーを取得
@@ -132,7 +161,14 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				cmd = COMMAND("calib");  % キャリブレーション指令をセット
 				mble.sendMessage( cmd ); % 指令送信
 			case 5 % 5秒後に
+<<<<<<< Updated upstream
 				% !! ↓のArmコマンドを送信するとプロペラが回転する前段階になるので注意 !!
+=======
+				cmd = COMMAND("calib"); % 再度キャリブレーション指令をセット
+				mble.sendMessage( cmd ); % 指令送信
+			case 6 % 6秒後に
+				% !! ↓のArmコマンドを送信するとプロペラが回転する可能性があるので注意 !!
+>>>>>>> Stashed changes
 				cmd = COMMAND("arm"); % arm状態コマンド
 				mble.sendMessage( cmd ); % 指令送信
 			case 7 % 7秒後に
@@ -141,7 +177,10 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				mble.sendMessage( cmd ); % 指令送信
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
+<<<<<<< Updated upstream
 				%cmd = COMMAND("control"); % 制御開始コマンド
+=======
+>>>>>>> Stashed changes
 				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
 				mble.sendMessage( cmd ); % 指令送信
 		end
