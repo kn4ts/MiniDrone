@@ -6,7 +6,14 @@
 #ifndef IntegratedIMU_h
     #define IntegratedIMU_h
 
-    #include <Arduino_LSM9DS1.h>
+    //#define USE_IMU_REV2 // Rev2用ライブラリを使う場合はコメントアウトを外す
+
+    // ---- どちらか一方だけ有効にする ----
+    #if defined(USE_IMU_REV2)
+      #include <Arduino_BMI270_BMM150.h>   // Nano 33 BLE Rev2 / Sense Rev2 用
+    #else
+      #include <Arduino_LSM9DS1.h>         // Nano 33 BLE (Rev1) 用
+    #endif
 
     // IMUの初期化関数
     bool initIMU();
