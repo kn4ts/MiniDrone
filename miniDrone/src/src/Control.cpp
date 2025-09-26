@@ -17,15 +17,11 @@ static float ref_yaw = 0;   // ヨー目標値[degree]の初期値
 // 高度ゲイン
 static AltGain altK = { 0.2, 0.05, 0.03 }; // 高度制御器ゲインの構造体（P, I, D の順）
 // ロール角度ゲイン
-<<<<<<< Updated upstream
-static RollGain rolK = { 2.0, 0.0, 0.5 }; // ロール角度ゲインの構造体（P, I, D の順）
-=======
 //static RollGain rolK = { 2.0, 0.0, 0.5 }; // ロール角度ゲインの構造体（P, I, D の順）
 //static RollGain rolK = { 2.0, 0.0, 1.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 //static RollGain rolK = { 0.5, 0.0, 0.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 //static RollGain rolK = { 0.5, 0.0, 1.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 static RollGain rolK = { 1.5, 0.0, 1.5 }; // ロール角度ゲインの構造体（P, I, D の順）
->>>>>>> Stashed changes
 // ピッチ角度ゲイン
 static PitchGain pitK = { 2.0, 0.0, 0.5 }; // ピッチ角度ゲインの構造体（P, I, D の順）
 
