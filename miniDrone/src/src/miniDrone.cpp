@@ -58,19 +58,31 @@ int modeDetectionBLE(){
 
       // 前進・後退（ピッチ角）
       case CMD_FORWARD: // 受信文字が（char型の）'8'（前進）なら
-        mode = MODE_FORWARD; break;
-        //cnt_pit = -cnt_MAX; break; // カウンタを-最大値へ
+        //mode = MODE_FORWARD; break;
+        cnt_pit = -cnt_MAX; break; // カウンタを-最大値へ
       case CMD_BACKWARD: // 受信文字が（char型の）'2'（後退）なら
-        mode = MODE_BACKWARD; break;
-        //cnt_pit =  cnt_MAX; break; // カウンタを最大値へ
+        //mode = MODE_BACKWARD; break;
+        cnt_pit =  cnt_MAX; break; // カウンタを最大値へ
       // 左・右（ロール角）
       case CMD_LEFT: // 受信文字が（char型の）'4'（左）なら
-        mode = MODE_LEFT; break;
-        //cnt_rol = -cnt_MAX; break; // カウンタを最大値へ
+        //mode = MODE_LEFT; break;
+        cnt_rol = -cnt_MAX; break; // カウンタを最大値へ
       case CMD_RIGHT: // 受信文字が（char型の）'6'（右）なら
-        mode = MODE_RIGHT; break;
-        //cnt_rol =  cnt_MAX; break; // カウンタを最大値へ
+        //mode = MODE_RIGHT; break;
+        cnt_rol =  cnt_MAX; break; // カウンタを最大値へ
 
+      case CMD_ROLL_PLUS: // 受信文字が（char型の）'R'（ロール角目標値増加）なら
+        cnt_rol = cnt_MAX_LONG; cnt_pit = 0; break; // ロール角目標値を増加させる
+      case CMD_ROLL_MINUS: // 受信文字が（char型の）'A'（ロール角目標値減少）なら
+        cnt_rol = -cnt_MAX_LONG; cnt_pit = 0; break; // ロール角目標値を減少させる
+      case CMD_PITCH_PLUS: // 受信文字が（char型の）'P'（ピッチ角目標値増加）なら
+        cnt_pit = cnt_MAX_LONG; cnt_rol = 0; break; // ピッチ角目標値を増加させる
+      case CMD_PITCH_MINUS: // 受信文字が（char型の）'L'（ピッチ角目標値減少）なら
+        cnt_pit = -cnt_MAX_LONG; cnt_rol = 0; break; // ピッチ角目標値を減少させる
+      case CMD_ATTITUDE_NEUTRAL: // 受信文字が（char型の）'H'（姿勢目標値中立）なら
+        cnt_rol = 0 ; cnt_pit = 0 ; break; // 姿勢目標値を中立に戻す
+
+      /* 上記以外の場合は停止 */
       default:
         mode = MODE_STOP; break; // 予期しない文字なら停止モード
     }

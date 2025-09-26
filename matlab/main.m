@@ -1,5 +1,6 @@
 clc, close all, clear all
 
+% クラスのパスを追加
 addpath 'MatlabBLE' 	% BLE通信用クラスのパスを追加
 addpath 'DataFile' 	% データロガー用クラスのパスを追加
 addpath 'DataHandle' 	% データハンドルクラスのパスを追加
@@ -35,7 +36,7 @@ rap = HoriRap();
 % =======================
 % 送信コマンドの定義
 % 	1. 送信コマンドは，マイコン側の動作を規定するコマンドとする
-%   2. 送信コマンドは，マイコン側で定義されているコマンド"Command"に合わせる必要がある
+%   2. 送信コマンドは，マイコン側で定義されているコマンド"Command"と合わせる必要がある
 % =======================
 COMMAND  = dictionary(); % 辞書型としてCOMMANDを初期化
 COMMAND("none")		= 'n'; % 何もしないコマンド
@@ -61,6 +62,13 @@ COMMAND("forward")	= '8'; % 前進指令
 COMMAND("back")		= '2'; % 後退指令
 COMMAND("left")		= '4'; % 左移動指令
 COMMAND("right")	= '6'; % 右移動指令
+
+COMMAND("roll_plus")	= 'R'; % ロール角目標値を増加
+COMMAND("roll_minus")	= 'A'; % ロール角目標値を減少
+COMMAND("pitch_plus")	= 'P'; % ピッチ角目標値を増加
+COMMAND("pitch_minus")	= 'L'; % ピッチ角目標値を減少
+
+COMMAND("att_neutral")	= 'H'; % 姿勢目標値を中立に戻すコマンド
 
 % 未定義コマンド
 %COMMAND("disarm")	= 'd'; % ディスアーム（モーター停止）コマンド
@@ -157,10 +165,11 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 
 		% ループ回数の途中でメッセージ送信（BLE通信）
 		switch i
-			case 3	% 3秒後に
+			case 2	% 2秒後に
 				cmd = COMMAND("calib");  % キャリブレーション指令をセット
 				mble.sendMessage( cmd ); % 指令送信
 			case 5 % 5秒後に
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 				% !! ↓のArmコマンドを送信するとプロペラが回転する前段階になるので注意 !!
 =======
@@ -169,6 +178,12 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 			case 6 % 6秒後に
 				% !! ↓のArmコマンドを送信するとプロペラが回転する可能性があるので注意 !!
 >>>>>>> Stashed changes
+=======
+				cmd = COMMAND("calib"); %
+				mble.sendMessage( cmd ); % 指令送信
+			case 6 % 6秒後に
+				% !! ↓のArmコマンドを送信するとプロペラが回転する可能性があるので注意 !!
+>>>>>>> quadrotor_wip
 				cmd = COMMAND("arm"); % arm状態コマンド
 				mble.sendMessage( cmd ); % 指令送信
 			case 7 % 7秒後に
@@ -177,12 +192,39 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				mble.sendMessage( cmd ); % 指令送信
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
+<<<<<<< HEAD
 <<<<<<< Updated upstream
+=======
+				%cmd = COMMAND("test_roll"); % ロール軸方向の動作テストコマンド
+>>>>>>> quadrotor_wip
 				%cmd = COMMAND("control"); % 制御開始コマンド
 =======
 >>>>>>> Stashed changes
 				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
 				mble.sendMessage( cmd ); % 指令送信
+			case 12
+				cmd = COMMAND("roll_plus"); % ロール角目標値を増加
+				mble.sendMessage( cmd ); % 指令送信
+			case 17
+				cmd = COMMAND("roll_minus"); % ロール角目標値を減少
+				mble.sendMessage( cmd ); % 指令送信
+			case 22
+				cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
+				mble.sendMessage( cmd ); % 指令送信
+			case 27
+				cmd = COMMAND("pitch_plus"); % ピッチ角目標値を増加
+				mble.sendMessage( cmd ); % 指令送信
+			case 32
+				cmd = COMMAND("pitch_minus"); % ピッチ角目標値を減少
+				mble.sendMessage( cmd ); % 指令送信
+			case 37
+				cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
+				mble.sendMessage( cmd ); % 指令送信
+			case 42
+				cmd = COMMAND("stop"); % 停止指令をセット
+				mble.sendMessage( cmd ); % 指令送信
+			case 43
+				break; % ループ抜ける -> 停止指令
 		end
 	end
 
