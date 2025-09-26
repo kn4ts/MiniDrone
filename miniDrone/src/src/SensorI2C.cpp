@@ -7,9 +7,12 @@
 */
 #include "../inc/SensorI2C.h"
 
-// ToFセンサ（測距センサ）のインスタンス生成
+// ToFセンサ（測距センサ）の変数
 static VL53L0X senToF;
 static uint16_t dist = 0; // 距離計測値の格納用変数
+static uint16_t dist_bias = 0; // 距離計測値のバイアス値格納用変数
+
+static bool flagToF = false; // 計測値の準備状態のフラグ
 
 // BLEの初期設定関数
 bool initSensorI2C(){
@@ -23,12 +26,49 @@ bool initSensorI2C(){
     // 失敗ならここへ
     state = false;
   }else{
-    senToF.setMeasurementTimingBudget(29000); // デフォルトは33ms?
+    //senToF.setMeasurementTimingBudget(29000); // 計測周期を設定，デフォルトは33ms?
     //senToF.setMeasurementTimingBudget(20000); // デフォルトは33ms?
+
+    /* ↓機能しているかよくわからない部分（なしでもGPIOピンが測定完了時にLOWにできてる？）*/
+    // GPIO1を割り込みとして設定する
+    // 0x0A4: GPIO_HV_MUX_ACTIVE_HIGH レジスタ
+    // 0x01: Active Low 設定（LOWレベルで割り込み発生）
+    writeRegister(0x0A4, 0x01);
+    // 0x0F0: SYSTEM__INTERRUPT_CONFIG_GPIO レジスタ
+    // 0x04: 測定完了時に割り込みを発生させる設定
+    writeRegister(0x0F0, 0x04);
+    // 割り込みをクリア
+    writeRegister(0x0F1, 0x01); // SYSTEM__INTERRUPT_CLEAR レジスタ
+    /* ↑機能しているかよくわからない部分（なしでもGPIOピンが測定完了時にLOWにできてる？）*/
+
     senToF.startContinuous(); // 連続測定モードを開始
+
+    // 割り込みピンの設定
+    pinMode( VL53L0X_IR, INPUT_PULLUP );
+    // FALLINGエッジで割り込む関数を設定
+    attachInterrupt(digitalPinToInterrupt(VL53L0X_IR), onSensorInterrupt, FALLING);
   }
   // 結果を返す（trueなら成功）
   return state;
+}
+// 割り込み関数
+void onSensorInterrupt() {
+  setToFFlag(true); // 割り込み発生フラグを立てる
+}
+// レジスタ操作用の関数
+void writeRegister(uint8_t reg, uint8_t value) {
+  Wire.beginTransmission(0x29); // VL53L0Xのデフォルトアドレス
+  Wire.write(reg);
+  Wire.write(value);
+  Wire.endTransmission();
+}
+
+// 割り込みが発生したときに呼び出される関数
+bool getToFFlag(){
+  return flagToF;
+}
+void setToFFlag( bool val ){
+  flagToF = val;
 }
 
 // 高度センサ値の更新関数
@@ -41,7 +81,14 @@ void updateAltitudeVal(){
   }
 }
 
+void setAltBias(){
+  dist_bias = getAltitudeVal();
+}
 // 高度計測値のゲッタ関数
 uint16_t getAltitudeVal(){
   return dist;
+}
+// 高度計測値のゲッタ関数
+float getAltitudeVal_wo_b(){
+  return (float)dist - (float)dist_bias;
 }

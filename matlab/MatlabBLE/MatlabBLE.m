@@ -1,7 +1,7 @@
 %% ==============================================
-%%  Mtlab BLE のクラス定義
+%%  Matlab BLE のクラス定義
 %%				2024/07/12
-%% 				KAWAGUCHI Natsuki
+%% 				K.N
 %% ==============================================
 classdef MatlabBLE
 	properties
@@ -10,15 +10,20 @@ classdef MatlabBLE
 		chara_send	% 特性
 		N_max = 5 % 最大接続試行回数の定義
 
+		baseline % 基準時刻
+
 		data	% データハンドル（参照渡し対応）
 		time	% データハンドル（参照渡し対応）
-		snum	% データハンドル
+		time_e	% データハンドル（参照渡し対応）
+		snum	% データハンドル（参照渡し対応）
+
+		isReading % 読み込み中のフラグ
 	end
 	methods
-		% H10センサのコンストラクタメソッド
+		% BLEクラスのコンストラクタメソッド
 		function obj = MatlabBLE( name ) 
 
-			% H10センサの接続部分
+			% BLEデバイスへの接続部分
 			for i=1:obj.N_max
 				disp("Connecting to -> " + name)
 				% センサへの接続を試行
@@ -43,7 +48,11 @@ classdef MatlabBLE
 			% センサのデータ格納用ハンドルの初期化
 			obj.data = DataHandle( 0 );
 			obj.time = DataHandle( obj.getDateTimeString() );
+			obj.time_e = DataHandle( "0" );
 			obj.snum = DataHandle( 0 );
+
+			obj.isReading = DataHandle( false ) ; % 読み込みフラグの初期化
+			obj.baseline = DataHandle( datetime('now')); % 基準時間を取得
 
 			if ~isempty( obj.dev )
 				% デバイスの特性（キャラクタリスティック）を操作するためのインスタンスを生成
@@ -55,8 +64,8 @@ classdef MatlabBLE
 					"d2e5cbb1-7f7e-4d3d-93f6-792d7e0f70db" );	
 			%	% 「デバイスからの通知」にコールバック関数を関連付ける
 			%	% 　デバイスからの通知...デバイスがメッセージを書き込んだらPCに通知が来る機能
-				obj.chara_read.DataAvailableFcn = @(src,evt) MatlabBLE.callback(src, evt, ...
-					obj.data, obj.time, obj.snum );
+				% obj.chara_read.DataAvailableFcn = @(src,evt) MatlabBLE.callback(src, evt, ...
+				% 	obj.data, obj.time, obj.snum );
 			else
 				disp("       ... Sensor was not found")
 			end
@@ -68,7 +77,12 @@ classdef MatlabBLE
 		%	se = obj.dh.se ;
 		%end
 		function sendMessage( obj, str )
-			write( obj.chara_send, uint8(str) );
+			try
+				%write( obj.chara_send, uint8(str) );
+				write( obj.chara_send, uint8(char(str)) );
+			catch ME
+				disp( "BLE send error" );
+			end
 		end
 		% 読み込み関数関数
 		function [ data, time, snum ] = getReadData( obj )
@@ -77,6 +91,11 @@ classdef MatlabBLE
 			snum = obj.snum.getVal() ;
 		end
 
+		function elapsedTime = getElapsedTimeString( obj )
+			et = milliseconds( datetime - obj.baseline.getVal() );
+			%elapsedTime = string( et );
+			elapsedTime = sprintf('%.0f', et );
+		end
 	end
 
 	methods (Static)

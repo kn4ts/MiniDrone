@@ -15,16 +15,16 @@
     // タイマー周期毎に実行する関数
     void onTimerCon();
     void onTimerBle();
-    void onTimerToF();
+    //void onTimerToF();
 
     // タイマー割り込みフラグの状態を確認する関数
     bool getTmConFlag();
     bool getTmBleFlag();
-    bool getTmToFFlag();
+    //bool getTmToFFlag();
 
     // タイマー割り込みフラグをおろす関数
     void setTmConFlag( bool flag );
     void setTmBleFlag( bool flag );
-    void setTmToFFlag( bool flag );
+    //void setTmToFFlag( bool flag );
 
 #endif

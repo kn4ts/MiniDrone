@@ -9,8 +9,18 @@
     #include <Wire.h>    // I2C通信のためのライブラリ
     #include <VL53L0X.h> // ToF測距センサのライブラリ
 
+    #define VL53L0X_IR D4 // 測距センサ監視用のDIポートの定義
+
     bool initSensorI2C();   // I2Cセンサの初期化関数
+
+    void writeRegister( uint8_t, uint8_t );
+
+    void onSensorInterrupt(); // 測距センサの計測完了タイミングで実行する割り込み関数
+    bool getToFFlag();  // フラグ
+    void setToFFlag( bool );    
+
     void updateAltitudeVal();   // 高度情報の更新
     uint16_t getAltitudeVal();  // 高度計測値のゲッタ関数
-
+    void setAltBias(); // 高度計測値のバイアスのセッタ関数
+    float getAltitudeVal_wo_b(); // バイアス処理後の高度を取得する関数
 #endif  // if def文の終わり
