@@ -35,7 +35,7 @@ static unsigned long prevTime_us, currTime_us ; // 時刻の差分をとるた�
 
 // 内臓IMUの初期化関数
 bool initIMU(){
-    bool state = true; // 戻り値の初期化
+    bool state = false; // 戻り値の初期化
 
     // バイアス値を0に初期化
     att_bias[0] = 0;
@@ -45,10 +45,7 @@ bool initIMU(){
     anv_bias[1] = 0;
     anv_bias[2] = 0;
 
-    if (!IMU.begin()){ state = false; } // 初期化に失敗すると戻り値をfalseに設定
-
-    // 初回計測でジャイロセンサのバイアスを取得
-    calibrateGyroBias();
+    if (IMU.begin()){ state = true; } // 初期化に成功すると戻り値をtrueに設定
 
     return state;
 }
