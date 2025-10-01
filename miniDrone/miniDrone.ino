@@ -169,7 +169,7 @@ void loop() {
             uc[3] = uc_pointer[3];
             break;
           
-          /* ジンバル制御モード */
+          /* ジンバル制御モード（ロール・ピッチ） */
           case MODE_GIMBAL_ROLL_PITCH: // 2DoFジンバル（ロールピッチ軸）の姿勢制御モード
             //uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
             uc_pointer = gimbalControl_demo( att, anv, alt ); // ジンバル使用時の制御則
@@ -179,6 +179,16 @@ void loop() {
             uc[3] = uc_pointer[3];
             break;
           
+          /* ジンバル制御モード（ロールのみ） */
+          case MODE_GIMBAL_ROLL: // 1DoFジンバル（ロール軸のみ）の姿勢制御モード
+            //uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
+            uc_pointer = gimbalControl_1dof_demo( att, anv, alt ); // ジンバル使用時の制御則
+            uc[0] = uc_pointer[0]; // 制御器出力をucにセット
+            uc[1] = uc_pointer[1];
+            uc[2] = uc_pointer[2];
+            uc[3] = uc_pointer[3];
+            break;
+
           /* アイドリングモード */
           case MODE_IDLE:
             uc_pointer = idle_thrust( ); // アイドル推力をセット

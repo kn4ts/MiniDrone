@@ -53,6 +53,8 @@ int modeDetectionBLE(){
         mode = MODE_CALIBRATE; break;
       case CMD_GIMBAL_ROLL_PITCH: // 受信文字が（char型の）'g'なら
         mode = MODE_GIMBAL_ROLL_PITCH; break;
+      case CMD_GIMBAL_ROLL: // 受信文字が（char型の）'f'なら
+        mode = MODE_GIMBAL_ROLL; break;
       case CMD_ARM: // 受信文字が（char型の）'a'ならarm
         mode = MODE_ARM; break;
 

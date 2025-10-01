@@ -21,7 +21,8 @@ static AltGain altK = { 0.2, 0.05, 0.03 }; // 高度制御器ゲインの構造�
 //static RollGain rolK = { 2.0, 0.0, 1.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 //static RollGain rolK = { 0.5, 0.0, 0.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 //static RollGain rolK = { 0.5, 0.0, 1.0 }; // ロール角度ゲインの構造体（P, I, D の順）
-static RollGain rolK = { 1.5, 0.0, 1.5 }; // ロール角度ゲインの構造体（P, I, D の順）
+//static RollGain rolK = { 1.5, 0.0, 1.5 }; // ロール角度ゲインの構造体（P, I, D の順）
+static RollGain rolK = { 1.0, 0.0, 1.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 // ピッチ角度ゲイン
 static PitchGain pitK = { 0.5, 0.0, 1.0 }; // ピッチ角度ゲインの構造体（P, I, D の順）
 //static PitchGain pitK = { 2.0, 0.0, 0.5 }; // ピッチ角度ゲインの構造体（P, I, D の順）
@@ -220,6 +221,79 @@ float* gimbalControl_demo( float* att, float* anv, float distance ){
     return &uc[0];
 }
 
+// Gimbal control (1DoF: roll)
+float* gimbalControl_1dof_demo( float* att, float* anv, float distance ){
+
+    // 時間計測（us精度）とクリップ
+    currTime_us = micros();
+    deltaTime = (currTime_us - prevTime_us) * 1.0e-6f;
+    if (deltaTime < 0.0005f) deltaTime = 0.0005f;  // 下限
+    if (deltaTime > 0.0200f) deltaTime = 0.0200f;  // 上限（50 Hz 相当）
+    prevTime_us = currTime_us;
+
+    /* -------------------------------
+        信号の更新
+    ------------------------------- */ 
+    // 角度信号
+    rol.filt = att[0] ; // ロール角計測値にローパスフィルタをかけない
+    pit.filt = att[1] ; // ピッチ角計測値にローパスフィルタをかけない
+    yaw.filt = att[2] ; // ヨー角計測値にローパスフィルタをかけない
+
+    // 誤差（P項）
+    rol.e = ref_rol -rol.filt ; // 現在の誤差
+    pit.e = ref_pit -pit.filt ; // 誤差
+    yaw.e = ref_yaw -yaw.filt ; // 誤差
+
+    // ---- D項はジャイロを直接使用（数値微分しない）----
+    rol.ed = anv[0] ; // 
+    pit.ed = anv[1] ; //
+    yaw.ed = anv[2] ; //
+
+    // ---- 積分（必要ならゲインを有効に）----
+    rol.ei += rol.e * deltaTime;
+    pit.ei += pit.e * deltaTime;
+    yaw.ei += yaw.e * deltaTime;
+
+    // ---- 高度ブロック（傾斜補償＋微分先行）----
+    alt.filt = lowpassFilterAltitude_demo(alt.filt_prev, distance);
+    alt.filt = compensationWithAttitude(alt.filt, rol.filt, pit.filt);
+    alt.ed   = (alt.filt_prev - alt.filt) / deltaTime;   // 計測値先行の微分
+    alt.e    = ref_alt - alt.filt;
+    alt.ei  += alt.e * deltaTime;
+    alt.filt_prev = alt.filt;
+
+    // 積分の簡易アンチワインドアップ（飽和前にクランプ）
+    const float I_LIM_RP  = 100.0f;
+    const float I_LIM_YAW = 100.0f;
+    const float I_LIM_ALT = 300.0f;
+    rol.ei = constrain(rol.ei, -I_LIM_RP,  I_LIM_RP);
+    pit.ei = constrain(pit.ei, -I_LIM_RP,  I_LIM_RP);
+    yaw.ei = constrain(yaw.ei, -I_LIM_YAW, I_LIM_YAW);
+    alt.ei = constrain(alt.ei, -I_LIM_ALT, I_LIM_ALT);
+
+    // 要求制御力の計算
+    float tau_rol = rolK.p * rol.e + rolK.i * rol.ei + rolK.d * rol.ed ; // ロール方向
+    //float tau_rol = 0.0 ; // ロール方向
+    float tau_pit = 0.0 ; // ピッチ方向
+    float tau_yaw = 0.0 ;
+    float f_total = 0.0 ; // 高度方向 制御力は0
+
+    // 制御器出力の飽和
+    tau_rol = saturate_controller_rollpitch( tau_rol );
+    tau_pit = saturate_controller_rollpitch( tau_pit );
+
+    // ミキシング（分配）
+    allocator_demo( tau_rol, tau_pit, tau_yaw, f_total );
+
+    // 変数保存&更新
+    cont_force[0] = tau_rol;
+    cont_force[1] = tau_pit;
+    cont_force[2] = tau_yaw;
+    cont_force[3] = f_total;
+
+    // 計算した制御入力（PWM値）の配列の先頭アドレスを返す
+    return &uc[0];
+}
 // 分配器の実装例
 void allocator_demo( float t_r, float t_p, float t_y, float f_t ){
     uc[0] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[0] ;

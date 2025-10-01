@@ -17,7 +17,8 @@ df = DataFile( OUTPUT_FOLDER ) % データロガークラスのインスタン�
 %ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
 % ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
 % ID = "6D09F5206CBC";
-ID = "7A92696EC856";
+% ID = "7A92696EC856";
+ID = "EF839678DFE4";
 mble = MatlabBLE( ID )	% BLE通信のインスタンス生成
 
 f = genCallbackFunction( mble, df ); % BLE受信により起動させるコールバック関数を生成
@@ -48,6 +49,7 @@ COMMAND("calib")	= 'c'; % キャリブレーションコマンド
 % 動作変更コマンド
 COMMAND("control")	= 's'; % 制御開始コマンド
 COMMAND("gimbal")	= 'g'; % ジンバル制御開始コマンド
+COMMAND("gimbal_roll") = 'f'; % ジンバル制御（ロール軸のみ）開始コマンド
 
 COMMAND("idle")		= 'i'; % アイドリング（モーター回転）コマンド
 
@@ -97,25 +99,27 @@ i = 0 ; % カウンタ
 %=======================
 while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 
-	% ジョイスティックの入力チェック
-	rap.updateJoyState();	% ジョイスティックの状態更新
-	if rap.checkPOVsChangedXdirection()	% POV（十字キー）のX方向の変化があれば
-		povX = rap.getPOVXdirection();	% POVのX方向の状態を取得
-		switch povX
-			case 1 % right
-				cmd = COMMAND("roll_plus"); % ロール軸の目標値を正に
-			case -1 % left
-				cmd = COMMAND("roll_minus"); % ロール軸の目標値を負に
-			otherwise
-				cmd = COMMAND("att_neutral"); % ロール軸の目標値を水平に
+	if ~isempty(rap) % HoriRapオブジェクトが空でないなら
+		% ジョイスティックの入力チェック
+		rap.updateJoyState();	% ジョイスティックの状態更新
+		if rap.checkPOVsChangedXdirection()	% POV（十字キー）のX方向の変化があれば
+			povX = rap.getPOVXdirection();	% POVのX方向の状態を取得
+			switch povX
+				case 1 % right
+					cmd = COMMAND("roll_plus"); % ロール軸の目標値を正に
+				case -1 % left
+					cmd = COMMAND("roll_minus"); % ロール軸の目標値を負に
+				otherwise
+					cmd = COMMAND("att_neutral"); % ロール軸の目標値を水平に
+			end
+			if cmd ~= COMMAND("none")	% 送信コマンドが"none"でなければ
+				mble.sendMessage( cmd );	% BLE通信でコマンド送信
+				str = "POV X direction changed! New POVs: " + povX + ", command sent: " + cmd ;
+				disp( str );	% 画面表示
+				cmd = ''; % 送信コマンドをリセット
+			end
+			pause(0.1);	% 0.1秒待つ
 		end
-		if cmd ~= COMMAND("none")	% 送信コマンドが"none"でなければ
-			mble.sendMessage( cmd );	% BLE通信でコマンド送信
-			str = "POV X direction changed! New POVs: " + povX + ", command sent: " + cmd ;
-			disp( str );	% 画面表示
-			cmd = ''; % 送信コマンドをリセット
-		end
-		pause(0.1);	% 0.1秒待つ
 	end
 
 	% キー入力のチェック
@@ -181,31 +185,38 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				mble.sendMessage( cmd ); % 指令送信
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
-				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
+				%cmd = COMMAND("gimbal"); % ジンバル制御（ロール・ピッチ）開始コマンド
+				cmd = COMMAND("gimbal_roll"); % ジンバル制御（ロール）開始コマンド
 				mble.sendMessage( cmd ); % 指令送信
-			case 12
-				cmd = COMMAND("roll_plus"); % ロール角目標値を増加
-				mble.sendMessage( cmd ); % 指令送信
-			case 17
-				cmd = COMMAND("roll_minus"); % ロール角目標値を減少
-				mble.sendMessage( cmd ); % 指令送信
-			case 22
-				cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
-				mble.sendMessage( cmd ); % 指令送信
-			case 27
-				cmd = COMMAND("pitch_plus"); % ピッチ角目標値を増加
-				mble.sendMessage( cmd ); % 指令送信
-			case 32
-				cmd = COMMAND("pitch_minus"); % ピッチ角目標値を減少
-				mble.sendMessage( cmd ); % 指令送信
-			case 37
-				cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
-				mble.sendMessage( cmd ); % 指令送信
-			case 42
-				cmd = COMMAND("stop"); % 停止指令をセット
-				mble.sendMessage( cmd ); % 指令送信
-			case 43
-				break; % ループ抜ける -> 停止指令
+		end
+
+		% rapオブジェクトが空なら，時間経過で動作
+		if isempty(rap)
+			switch i
+				case 12
+					cmd = COMMAND("roll_plus"); % ロール角目標値を増加
+					mble.sendMessage( cmd ); % 指令送信
+				case 17
+					cmd = COMMAND("roll_minus"); % ロール角目標値を減少
+					mble.sendMessage( cmd ); % 指令送信
+				case 22
+					cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
+					mble.sendMessage( cmd ); % 指令送信
+				case 27
+					cmd = COMMAND("pitch_plus"); % ピッチ角目標値を増加
+					mble.sendMessage( cmd ); % 指令送信
+				case 32
+					cmd = COMMAND("pitch_minus"); % ピッチ角目標値を減少
+					mble.sendMessage( cmd ); % 指令送信
+				case 37
+					cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
+					mble.sendMessage( cmd ); % 指令送信
+				case 42
+					cmd = COMMAND("stop"); % 停止指令をセット
+					mble.sendMessage( cmd ); % 指令送信
+				case 43
+					break; % ループ抜ける -> 停止指令
+			end
 		end
 	end
 

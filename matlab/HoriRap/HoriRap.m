@@ -40,23 +40,24 @@ classdef HoriRap
                 end
             end
             if isempty(ids)
-                error("ジョイスティックが検出されませんでした");
+                disp("ジョイスティックが検出されませんでした");
+                obj = HoriRap.empty ; % 空のオブジェクトを返す
+                return
             else
                 obj.joyID = DataHandle( ids(1) );
+
+                % ジョイスティックの特性取得
+                [ a, b, p ] = read( obj.joy ) ;
+                numAxes = length(a);     % 軸の数
+                numButtons = length(b);  % ボタンの数
+                numPOVs = length(p);     % POVの数
+
+                obj.axes    = DataHandle( zeros(1, numAxes) );
+                obj.buttons = DataHandle( zeros(1, numButtons) );
+                obj.povs    = DataHandle( zeros(1, numPOVs) );
+
+                obj.pre_povs = DataHandle( zeros(1, numPOVs) );
             end
-
-            % ジョイスティックの特性取得
-            [ a, b, p ] = read( obj.joy ) ;
-            numAxes = length(a);     % 軸の数
-            numButtons = length(b);  % ボタンの数
-            numPOVs = length(p);     % POVの数
-
-            obj.axes    = DataHandle( zeros(1, numAxes) );
-            obj.buttons = DataHandle( zeros(1, numButtons) );
-            obj.povs    = DataHandle( zeros(1, numPOVs) );
-
-            obj.pre_povs = DataHandle( zeros(1, numPOVs) );
-
             %obj.flagPOVchanged = DataHandle( false );
         end
 
@@ -136,7 +137,7 @@ classdef HoriRap
                 case 90 % 左
                     x = -1;
                 case 135 % 左上
-                    x = 1;
+                    x = -1;
                 case 180 % 上
                     x = 0;
                 case 225 % 右上
