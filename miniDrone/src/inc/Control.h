@@ -46,7 +46,8 @@
 
     // ジンバル制御の実装例
     //float* gimbalControl_demo(float* y, float distance);
-    float* gimbalControl_demo(float* att, float* att_vel, float distance);
+    float* gimbalControl_demo(float* att, float* att_vel, float distance);  // 2DoFジンバル（ロール・ピッチ）
+    float* gimbalControl_1dof_demo(float* att, float* att_vel, float distance); // 1DoFジンバル（ロール軸のみ）
 
     // 姿勢角度による高度計測値の補正
     float compensationWithAttitude(float y, float phi, float theta);

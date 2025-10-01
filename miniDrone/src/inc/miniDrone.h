@@ -30,6 +30,7 @@
         /* 動作変更コマンド */
         CMD_CONTROL         = 's',  // 制御開始コマンド
         CMD_GIMBAL_ROLL_PITCH = 'g',// 制御開始（ジンバル）コマンド
+        CMD_GIMBAL_ROLL     = 'f',// 制御開始（ジンバル，ロールのみ）コマンド
 
         CMD_IDLE            = 'i',  // アイドリングコマンド
 
@@ -73,6 +74,7 @@
         MODE_CONTROL_STANDBY = 10, // 制御開始の準備モード
         MODE_CONTROL    = 12,   // 制御実行モード
         MODE_GIMBAL_ROLL_PITCH = 30, // ジンバル制御モード
+        MODE_GIMBAL_ROLL = 29, // ジンバル制御モード
 
         MODE_TEST_ALL_MOTORS = 1,  // 全モータテストモード
         MODE_TEST_ROLL       = 21, // ロール角動作テストモード
