@@ -169,21 +169,11 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				cmd = COMMAND("calib");  % キャリブレーション指令をセット
 				mble.sendMessage( cmd ); % 指令送信
 			case 5 % 5秒後に
-<<<<<<< HEAD
-<<<<<<< Updated upstream
 				% !! ↓のArmコマンドを送信するとプロペラが回転する前段階になるので注意 !!
-=======
 				cmd = COMMAND("calib"); % 再度キャリブレーション指令をセット
 				mble.sendMessage( cmd ); % 指令送信
 			case 6 % 6秒後に
 				% !! ↓のArmコマンドを送信するとプロペラが回転する可能性があるので注意 !!
->>>>>>> Stashed changes
-=======
-				cmd = COMMAND("calib"); %
-				mble.sendMessage( cmd ); % 指令送信
-			case 6 % 6秒後に
-				% !! ↓のArmコマンドを送信するとプロペラが回転する可能性があるので注意 !!
->>>>>>> quadrotor_wip
 				cmd = COMMAND("arm"); % arm状態コマンド
 				mble.sendMessage( cmd ); % 指令送信
 			case 7 % 7秒後に
@@ -192,14 +182,6 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 				mble.sendMessage( cmd ); % 指令送信
 			case 8 % 8秒後に
 				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
-				%cmd = COMMAND("test_roll"); % ロール軸方向の動作テストコマンド
->>>>>>> quadrotor_wip
-				%cmd = COMMAND("control"); % 制御開始コマンド
-=======
->>>>>>> Stashed changes
 				cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
 				mble.sendMessage( cmd ); % 指令送信
 			case 12
