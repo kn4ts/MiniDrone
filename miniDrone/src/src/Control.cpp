@@ -23,7 +23,8 @@ static AltGain altK = { 0.2, 0.05, 0.03 }; // 高度制御器ゲインの構造�
 //static RollGain rolK = { 0.5, 0.0, 1.0 }; // ロール角度ゲインの構造体（P, I, D の順）
 static RollGain rolK = { 1.5, 0.0, 1.5 }; // ロール角度ゲインの構造体（P, I, D の順）
 // ピッチ角度ゲイン
-static PitchGain pitK = { 2.0, 0.0, 0.5 }; // ピッチ角度ゲインの構造体（P, I, D の順）
+static PitchGain pitK = { 0.5, 0.0, 1.0 }; // ピッチ角度ゲインの構造体（P, I, D の順）
+//static PitchGain pitK = { 2.0, 0.0, 0.5 }; // ピッチ角度ゲインの構造体（P, I, D の順）
 
 // ロール・ピッチ方向PID制御器出力の最小・最大値
 static float controller_output_max = 10.0 ; // 試行錯誤
@@ -49,8 +50,9 @@ static float u_offset[4] = {6,6,7,9}; // モータ個体差の補償のための
 static float u_idle = 10 ; // アイドリング時の入力
 
 // 制御器実装用の変数
-static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数
-static float deltaTime ; // 時刻の差分を格納する変数
+static unsigned long prevTime, currTime ; // 時刻の差分をとるための変数（ミリ秒）
+static unsigned long prevTime_us, currTime_us ; // 時刻の差分をとるための変数（マイクロ秒）
+static float deltaTime ; // 時刻の差分を格納する変数（秒）
 
 // 飛行状態の把握に使う？内部変数
 static int8_t status = 0 ; // ステータス
@@ -139,48 +141,65 @@ float* controller_demo( float* y, float distance ){
 }
 
 // Gimbal control (2DoF: roll, pitch)
-float* gimbalControl_demo( float* y, float distance ){
+float* gimbalControl_demo( float* att, float* anv, float distance ){
 
-    // 時間算出
-    currTime = millis(); // 現在時刻の取得
-    deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算，最大でも0.02[s]に制限
-    prevTime = currTime; // 前回時刻を更新
+    // 時間計測（us精度）とクリップ
+    currTime_us = micros();
+    deltaTime = (currTime_us - prevTime_us) * 1.0e-6f;
+    if (deltaTime < 0.0005f) deltaTime = 0.0005f;  // 下限
+    if (deltaTime > 0.0200f) deltaTime = 0.0200f;  // 上限（50 Hz 相当）
+    prevTime_us = currTime_us;
+
+    //// 時間算出
+    //currTime = millis(); // 現在時刻の取得
+    //deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算，最大でも0.02[s]に制限
+    //prevTime = currTime; // 前回時刻を更新
 
     /* -------------------------------
         信号の更新
     ------------------------------- */ 
-    // ロール角度情報
-    rol.filt = lowpassFilterRoll_demo( rol.filt_prev, y[0] ) ; // ロール角計測値にローパスフィルタをかける
-    //
-    //rol.e = ref_rol -y[0] ; // 現在の誤差
+    // 角度信号
+    rol.filt = att[0] ; // ロール角計測値にローパスフィルタをかけない
+    pit.filt = att[1] ; // ピッチ角計測値にローパスフィルタをかけない
+    yaw.filt = att[2] ; // ヨー角計測値にローパスフィルタをかけない
+
+    // 誤差（P項）
     rol.e = ref_rol -rol.filt ; // 現在の誤差
-    rol.ed = ( rol.e -rol.e_prev ) / deltaTime ; // 誤差を数値微分
-    rol.ei += rol.e * deltaTime ; // 誤差の積分
-    //
-    rol.e_prev = rol.e ; // 1ステップ前のロール角誤差を更新
-    rol.filt_prev = rol.filt ; // 1ステップ前のフィルタ処理後のロール角を更新
-
-    // ピッチ角度情報
-    pit.filt = lowpassFilterPitch_demo( pit.filt_prev, y[1] ) ; // ピッチ角計測値にローパスフィルタをかける
-    //
-    //pit.e = ref_pit -y[1] ; // 誤差
     pit.e = ref_pit -pit.filt ; // 誤差
-    pit.ed = ( pit.e -pit.e_prev ) / deltaTime ; // 誤差の数値微分
-    pit.ei += pit.e * deltaTime ; // 誤差の積分
-    //
-    pit.e_prev = pit.e ; // 1ステップ前のピッチ角誤差を更新
-    pit.filt_prev = pit.filt ; // 1ステップ前のフィルタ処理後のピッチ角を更新
+    yaw.e = ref_yaw -yaw.filt ; // 誤差
 
-    // ヨー角度情報
-    yaw.filt = lowpassFilterYaw_demo( yaw.filt_prev, y[2] ) ; // ヨー角計測値にローパスフィルタをかける
+    // ---- D項はジャイロを直接使用（数値微分しない）----
+    rol.ed = anv[0] ; // 
+    pit.ed = anv[1] ; //
+    yaw.ed = anv[2] ; //
 
-    // 高度情報
-    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
-    alt.filt = compensationWithAttitude( alt.filt, rol.filt, pit.filt );
+    // ---- 積分（必要ならゲインを有効に）----
+    rol.ei += rol.e * deltaTime;
+    pit.ei += pit.e * deltaTime;
+    yaw.ei += yaw.e * deltaTime;
+
+    // ---- 高度ブロック（傾斜補償＋微分先行）----
+    alt.filt = lowpassFilterAltitude_demo(alt.filt_prev, distance);
+    alt.filt = compensationWithAttitude(alt.filt, rol.filt, pit.filt);
+    alt.ed   = (alt.filt_prev - alt.filt) / deltaTime;   // 計測値先行の微分
+    alt.e    = ref_alt - alt.filt;
+    alt.ei  += alt.e * deltaTime;
+    alt.filt_prev = alt.filt;
+
+    // 積分の簡易アンチワインドアップ（飽和前にクランプ）
+    const float I_LIM_RP  = 100.0f;
+    const float I_LIM_YAW = 100.0f;
+    const float I_LIM_ALT = 300.0f;
+    rol.ei = constrain(rol.ei, -I_LIM_RP,  I_LIM_RP);
+    pit.ei = constrain(pit.ei, -I_LIM_RP,  I_LIM_RP);
+    yaw.ei = constrain(yaw.ei, -I_LIM_YAW, I_LIM_YAW);
+    alt.ei = constrain(alt.ei, -I_LIM_ALT, I_LIM_ALT);
 
     // 要求制御力の計算
     float tau_rol = rolK.p * rol.e + rolK.i * rol.ei + rolK.d * rol.ed ; // ロール方向
+    //float tau_rol = 0.0 ; // ロール方向
     float tau_pit = pitK.p * pit.e + pitK.i * pit.ei + pitK.d * pit.ed ; // ピッチ方向
+    //float tau_pit = 0.0 ; // ピッチ方向
     float tau_yaw = 0.0 ;
     float f_total = 0.0 ; // 高度方向 制御力は0
 
@@ -203,10 +222,10 @@ float* gimbalControl_demo( float* y, float distance ){
 
 // 分配器の実装例
 void allocator_demo( float t_r, float t_p, float t_y, float f_t ){
-    uc[0] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[0] ;
-    uc[1] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[1] ;
-    uc[2] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[2] ;
-    uc[3] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[3] ;
+    uc[0] = (-1.0) * t_r + (+1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[0] ;
+    uc[1] = (-1.0) * t_r + (-1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[1] ;
+    uc[2] = (+1.0) * t_r + (-1.0) * t_p + (+1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[2] ;
+    uc[3] = (+1.0) * t_r + (+1.0) * t_p + (-1.0) * t_y + (+1.0) * f_t + u_bias + u_offset[3] ;
 }
 
 // アイドリング入力

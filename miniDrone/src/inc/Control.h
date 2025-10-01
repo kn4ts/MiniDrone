@@ -45,7 +45,8 @@
     float lowpassFilterYaw_demo( float yaw_filt_prev, float yaw ); // ヨー角について
 
     // ジンバル制御の実装例
-    float* gimbalControl_demo(float* y, float distance);
+    //float* gimbalControl_demo(float* y, float distance);
+    float* gimbalControl_demo(float* att, float* att_vel, float distance);
 
     // 姿勢角度による高度計測値の補正
     float compensationWithAttitude(float y, float phi, float theta);

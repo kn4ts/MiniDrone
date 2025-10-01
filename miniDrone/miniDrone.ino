@@ -73,7 +73,9 @@ void loop() {
         
         // センサキャリブレーション
         case MODE_CALIBRATE: // センサキャリブレーション
-          calibrateSensors(); mode = MODE_NORMAL; break;
+          calibrateSensors();
+          calibrateGyroBias(); // ジャイロセンサのバイアスを再取得
+          mode = MODE_NORMAL; break;
 
         // Arm
         case MODE_ARM:
@@ -83,14 +85,14 @@ void loop() {
           mode = MODE_NORMAL; break;
 
         /* 目標値セット */
-        case MODE_FORWARD:
-          cnt_pit = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを-最大値へ
-        case MODE_BACKWARD:
-          cnt_pit =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
-        case MODE_LEFT:
-          cnt_rol = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
-        case MODE_RIGHT:
-          cnt_rol =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        //case MODE_FORWARD:
+        //  cnt_pit = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを-最大値へ
+        //case MODE_BACKWARD:
+        //  cnt_pit =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        //case MODE_LEFT:
+        //  cnt_rol = -cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
+        //case MODE_RIGHT:
+        //  cnt_rol =  cnt_MAX; mode = MODE_NORMAL; break; // カウンタを最大値へ
 
         /* 停止モード */
         case MODE_STOP: 
@@ -117,12 +119,14 @@ void loop() {
         updateRollPitchReference( cnt_rol, cnt_pit ); // ロール・ピッチ角指令値の更新
 
         // IMUセンサ値を用いた姿勢角の更新
-        updateIMUAttitudeVal();
+        //updateIMUAttitudeVal();
+        updateIMUAttitudeVal_ver2();
+
         // IMUで計算した値を取得
         att = getIMUAttitude_wo_b(); // 姿勢を取得
         anv = getIMUAngularVelocity_wo_b(); // 角速度を取得
         // 地磁気計測値を取得
-        mag = getIMUMag(); 
+        // mag = getIMUMag(); 
 
         /* ToFセンサから届いている最新の高度を取得 */
         if ( getToFFlag() ){
@@ -135,8 +139,8 @@ void loop() {
         /*
           高度・姿勢の異常検知
         */
-       if( abs(att[0]) > 90 ){ mode = MODE_STOP; }; // ロール角が異常ならモードを0に
-       if( abs(att[1]) > 90 ){ mode = MODE_STOP; }; // ピッチ角が異常ならモードを0に
+        if( abs(att[0]) > 90 ){ mode = MODE_STOP; }; // ロール角が異常ならモードを0に
+        if( abs(att[1]) > 90 ){ mode = MODE_STOP; }; // ピッチ角が異常ならモードを0に
 
         /*
           モードに応じた動作（継続実行）
@@ -167,7 +171,8 @@ void loop() {
           
           /* ジンバル制御モード */
           case MODE_GIMBAL_ROLL_PITCH: // 2DoFジンバル（ロールピッチ軸）の姿勢制御モード
-            uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
+            //uc_pointer = gimbalControl_demo( att, alt ); // ジンバル使用時の制御則
+            uc_pointer = gimbalControl_demo( att, anv, alt ); // ジンバル使用時の制御則
             uc[0] = uc_pointer[0]; // 制御器出力をucにセット
             uc[1] = uc_pointer[1];
             uc[2] = uc_pointer[2];
