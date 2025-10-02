@@ -15,9 +15,7 @@ df = DataFile( OUTPUT_FOLDER ) % データロガークラスのインスタン�
 
 % BLE通信の設定
 %ID = "8DFC031CAF32"; % Bluetooth MAC アドレス
-% ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
-% ID = "6D09F5206CBC";
-% ID = "7A92696EC856";
+%ID = "5BEE875C506D"; % 接続先のドローンの Bluetooth MAC アドレス
 ID = "EF839678DFE4";
 mble = MatlabBLE( ID )	% BLE通信のインスタンス生成
 
@@ -44,7 +42,8 @@ COMMAND("none")		= 'n'; % 何もしないコマンド
 COMMAND("stop")		= '0'; % 停止コマンド
 
 COMMAND("arm")		= 'a'; % アームコマンド
-COMMAND("calib")	= 'c'; % キャリブレーションコマンド
+COMMAND("calib_sensors")	= 'c'; % キャリブレーションコマンド
+COMMAND("calib_attitude")	= 'C'; % 姿勢角キャリブレーションコマンド
 
 % 動作変更コマンド
 COMMAND("control")	= 's'; % 制御開始コマンド
@@ -132,7 +131,7 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 		switch keyPressed
 			% 基本動作モード変更の指令
 			case KEY("c")
-				cmd = COMMAND("calib"); % キャリブレーション指令をセット
+				cmd = COMMAND("calib_sensors"); % キャリブレーション指令をセット
 
 			% 目標値変更の指令
 			case KEY("down")
@@ -170,53 +169,51 @@ while( tm.t.Running == "on" ) % タイマーが有効である間ループ
 		% ループ回数の途中でメッセージ送信（BLE通信）
 		switch i
 			case 2	% 2秒後に
-				cmd = COMMAND("calib");  % キャリブレーション指令をセット
+				cmd = COMMAND("calib_sensors");  % キャリブレーション指令をセット
 				mble.sendMessage( cmd ); % 指令送信
 			case 5 % 5秒後に
-				cmd = COMMAND("calib"); % 再度キャリブレーション指令をセット
+				cmd = COMMAND("calib_attitude"); % 姿勢角キャリブレーション指令をセット
 				mble.sendMessage( cmd ); % 指令送信
-			case 6 % 6秒後に
+			case 8 % 6秒後に
 				% !! ↓のArmコマンドを送信するとプロペラが回転する可能性があるので注意 !!
 				cmd = COMMAND("arm"); % arm状態コマンド
 				mble.sendMessage( cmd ); % 指令送信
-			case 7 % 7秒後に
+			case 10 % 7秒後に
 				% !! ↓のアイドリングコマンドを送信するとプロペラが回転するので注意 !!
 				cmd = COMMAND("idle"); % アイドリングコマンド
 				mble.sendMessage( cmd ); % 指令送信
-			case 8 % 8秒後に
-				% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
-				%cmd = COMMAND("gimbal"); % ジンバル制御（ロール・ピッチ）開始コマンド
-				cmd = COMMAND("gimbal_roll"); % ジンバル制御（ロール）開始コマンド
-				mble.sendMessage( cmd ); % 指令送信
-		end
-
-		% rapオブジェクトが空なら，時間経過で動作
-		if isempty(rap)
-			switch i
-				case 12
-					cmd = COMMAND("roll_plus"); % ロール角目標値を増加
-					mble.sendMessage( cmd ); % 指令送信
-				case 17
-					cmd = COMMAND("roll_minus"); % ロール角目標値を減少
-					mble.sendMessage( cmd ); % 指令送信
-				case 22
-					cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
-					mble.sendMessage( cmd ); % 指令送信
-				case 27
-					cmd = COMMAND("pitch_plus"); % ピッチ角目標値を増加
-					mble.sendMessage( cmd ); % 指令送信
-				case 32
-					cmd = COMMAND("pitch_minus"); % ピッチ角目標値を減少
-					mble.sendMessage( cmd ); % 指令送信
-				case 37
-					cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
-					mble.sendMessage( cmd ); % 指令送信
-				case 42
-					cmd = COMMAND("stop"); % 停止指令をセット
-					mble.sendMessage( cmd ); % 指令送信
-				case 43
-					break; % ループ抜ける -> 停止指令
-			end
+			%case 15 % 7秒後に
+			%	cmd = COMMAND("calib_sensors"); % センサキャリブレーション指令をセット
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 8 % 8秒後に
+			%	% !! ↓の制御開始コマンドを送信するとプロペラが回転するので注意 !!
+			%	%cmd = COMMAND("test_roll"); % ロール軸方向の動作テストコマンド
+			%	%cmd = COMMAND("control"); % 制御開始コマンド
+			%	cmd = COMMAND("gimbal"); % ジンバル制御開始コマンド
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 12
+			%	cmd = COMMAND("roll_plus"); % ロール角目標値を増加
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 17
+			%	cmd = COMMAND("roll_minus"); % ロール角目標値を減少
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 22
+			%	cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 27
+			%	cmd = COMMAND("pitch_plus"); % ピッチ角目標値を増加
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 32
+			%	cmd = COMMAND("pitch_minus"); % ピッチ角目標値を減少
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 37
+			%	cmd = COMMAND("att_neutral"); % 姿勢目標値を中立に戻す
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 42
+			%	cmd = COMMAND("stop"); % 停止指令をセット
+			%	mble.sendMessage( cmd ); % 指令送信
+			%case 43
+			%	break; % ループ抜ける -> 停止指令
 		end
 	end
 
