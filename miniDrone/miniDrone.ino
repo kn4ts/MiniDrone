@@ -72,9 +72,14 @@ void loop() {
           setAltitudeReference(300); mode = MODE_CONTROL; break; // 高度目標値をセット・モードをCONTROLへ移行
         
         // センサキャリブレーション
-        case MODE_CALIBRATE: // センサキャリブレーション
+        case MODE_CALIBRATE_SENSORS: // センサキャリブレーション
           calibrateSensors();
-          calibrateGyroBias(); // ジャイロセンサのバイアスを再取得
+          //calibrateGyroBias(); // ジャイロセンサのバイアスを再取得
+          mode = MODE_NORMAL; break;
+
+        // 姿勢角キャリブレーション
+        case MODE_CALIBRATE_ATTITUDE: // 姿勢角キャリブレーション
+          calibrateAttitude();
           mode = MODE_NORMAL; break;
 
         // Arm

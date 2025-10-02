@@ -25,7 +25,8 @@
         CMD_STOP            = '0',  // 停止コマンド
 
         CMD_ARM             = 'a',  // アームコマンド
-        CMD_CALIBRATE       = 'c',  // センサキャリブレーションコマンド
+        CMD_CALIBRATE_SENSORS = 'c',  // センサキャリブレーションコマンド
+        CMD_CALIBRATE_ATTITUDE = 'C',  // 姿勢キャリブレーションコマンド
 
         /* 動作変更コマンド */
         CMD_CONTROL         = 's',  // 制御開始コマンド
@@ -60,8 +61,15 @@
         MODE_STOP       = 0,    // 停止モード
 
         /* 一度きり実行動作 */
-        MODE_CALIBRATE  = 31,   // センサキャリブレーションモード
-        MODE_ARM        = 32,   // アームモード
+        MODE_CALIBRATE_SENSOR_GYRO  = 31, // ジャイロセンサキャリブレーションモード
+        MODE_CALIBRATE_SENSOR_DIST  = 32, // 測距センサキャリブレーションモード
+        MODE_CALIBRATE_SENSORS  = 33, // ジャイロ&測距センサキャリブレーションモード
+
+        MODE_CALIBRATE_ATTITUDE  = 36,   // 姿勢角キャリブレーションモード
+        //MODE_CALIBRATE_ALTITUDE  = 37,   // 高度キャリブレーションモード
+        //MODE_CALIBRATE_ATT_ALTI  = 38,   // 姿勢角&高度キャリブレーションモード
+
+        MODE_ARM        = 3,   // アームモード
 
         //MODE_FORWARD    = 41,   // 前進モード
         //MODE_BACKWARD   = 42,   // 後退モード
@@ -114,6 +122,7 @@
                     float ref_a, float ref_r, float ref_p ); // BLEで送信するメッセージを作成する関数
     void toggleDO(); // 制御周期確認用のDO切り替え関数
     void calibrateSensors(); // センサのバイアス値設定関数
+    void calibrateAttitude(); // 姿勢角のキャリブレーション関数
 
     void updateRollPitchReference( int& cnt_r, int& cnt_p ); // ロール・ピッチ角指令値の更新
 

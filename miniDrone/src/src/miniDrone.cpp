@@ -49,8 +49,10 @@ int modeDetectionBLE(){
         mode = MODE_TEST_ROLL; break;
       case CMD_TEST_PITCH: // ピッチ角動作の確認モード
         mode = MODE_TEST_PITCH; break;
-      case CMD_CALIBRATE: // 受信文字が（char型の）'c'なら
-        mode = MODE_CALIBRATE; break;
+      case CMD_CALIBRATE_SENSORS: // 受信文字が（char型の）'c'なら
+        mode = MODE_CALIBRATE_SENSORS; break;
+      case CMD_CALIBRATE_ATTITUDE: // 受信文字が（char型の）'C'なら
+        mode = MODE_CALIBRATE_ATTITUDE; break;
       case CMD_GIMBAL_ROLL_PITCH: // 受信文字が（char型の）'g'なら
         mode = MODE_GIMBAL_ROLL_PITCH; break;
       case CMD_ARM: // 受信文字が（char型の）'a'ならarm
@@ -131,7 +133,15 @@ void toggleDO(){
 }
 
 // センサのキャリブレーション（センサ値のバイアス処理）関数
-void calibrateSensors(){ setAttBias(); setAnvBias(); setAltBias(); }
+void calibrateSensors(){
+  calibrateGyroBias(); // ジャイロセンサのバイアスを設定
+  setAltBias(); // 高度センサのバイアスを設定
+}
+
+// 姿勢角のキャリブレーション関数
+void calibrateAttitude(){
+  setAttBias();
+}
 
 // 目標ロール・ピッチ角の更新関数
 void updateRollPitchReference( int& cnt_r, int& cnt_p ){

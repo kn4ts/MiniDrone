@@ -149,11 +149,6 @@ float* gimbalControl_demo( float* att, float* anv, float distance ){
     if (deltaTime > 0.0200f) deltaTime = 0.0200f;  // 上限（50 Hz 相当）
     prevTime_us = currTime_us;
 
-    //// 時間算出
-    //currTime = millis(); // 現在時刻の取得
-    //deltaTime = min( 0.001 * (currTime - prevTime), 0.02 ) ; // 前回からの差分時間[s]を計算，最大でも0.02[s]に制限
-    //prevTime = currTime; // 前回時刻を更新
-
     /* -------------------------------
         信号の更新
     ------------------------------- */ 
