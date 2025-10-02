@@ -10,7 +10,13 @@
 // ToFセンサ（測距センサ）の変数
 static VL53L0X senToF;
 static uint16_t dist = 0; // 距離計測値の格納用変数
-static uint16_t dist_bias = 0; // 距離計測値のバイアス値格納用変数
+//static uint16_t dist_bias = 0; // 距離計測値のバイアス値格納用変数
+
+static float alt = 0; // 高度計測値の格納用変数
+static float alt_bias = 0; // 高度計測値のバイアス値格納用変数
+static float alt_filt = 0; // 高度計測値のローパスフィルタ処理後の値
+
+static float alpha = 0.15; // ローパスフィルタの係数
 
 static bool flagToF = false; // 計測値の準備状態のフラグ
 
@@ -77,18 +83,33 @@ void updateAltitudeVal(){
 
   // タイムアウトや測定不能（8190より大きい値はエラー）でないことを確認
   if ( !senToF.timeoutOccurred() && temp < 8191) {
-    dist = temp;
+    dist = temp;  // 距離計測値（uint）を更新
+    alt  = (float)dist; // 高度計測値（float）を更新
+
+    alt_filt = lowpassFilter_demo( alt_filt, alt ); // ローパスフィルタをかける
   }
 }
 
+// 距離のローパスフィルタの実装例
+float lowpassFilter_demo( float alt_filt, float alt ){
+    // 高度計測値に1次のローパスフィルタをかける
+    float alt_filt_new = ( 1 - alpha ) * alt_filt + alpha * alt ;
+    return alt_filt_new;
+}
+// 距離計測値のバイアスのセッタ関数
 void setAltBias(){
-  dist_bias = getAltitudeVal();
+  //alt_bias = getAltitudeVal();
+  alt_bias = getFilteredAltitudeVal();
 }
-// 高度計測値のゲッタ関数
-uint16_t getAltitudeVal(){
-  return dist;
-}
-// 高度計測値のゲッタ関数
+// 距離計測値のゲッタ関数
+float getAltitudeVal(){ return alt; }
+// 距離計測値のゲッタ関数
 float getAltitudeVal_wo_b(){
-  return (float)dist - (float)dist_bias;
+  return alt - alt_bias;
+}
+// フィルタ後の距離計測値のゲッタ関数
+float getFilteredAltitudeVal(){ return alt_filt; }
+// フィルタ後のバイアスなし高度計測値のゲッタ関数
+float getFilteredAltitudeVal_wo_b(){
+  return alt_filt - alt_bias;
 }

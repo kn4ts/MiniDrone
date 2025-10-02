@@ -18,6 +18,8 @@
               ei,   // 誤差の積分
               ed,   // 誤差の微分
               e_prev, // 1ステップ前の信号
+              corr, // 傾斜補償後の信号
+              corr_prev, // 傾斜補償後の1ステップ前の信号
               filt, // フィルタ処理後の信号
               filt_prev; // フィルタ処理後かつ1ステップ前の信号
     }; 
@@ -35,7 +37,7 @@
     struct LowpassFilterGain{ float alt, rol, pit, yaw; } ;
 
     // 制御器の実装例
-    float* controller_demo(float* y, float distance);
+    float* controller_demo(float* y, float alti);
     // ミキシング則（分配器）の実装例
     void allocator_demo(float t_r, float t_p, float t_y, float f_t);
     // ローパス処理の実装例
@@ -46,7 +48,7 @@
 
     // ジンバル制御の実装例
     //float* gimbalControl_demo(float* y, float distance);
-    float* gimbalControl_demo(float* att, float* att_vel, float distance);
+    float* gimbalControl_demo(float* att, float* att_vel, float alti);
 
     // 姿勢角度による高度計測値の補正
     float compensationWithAttitude(float y, float phi, float theta);

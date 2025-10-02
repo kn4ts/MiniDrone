@@ -135,7 +135,7 @@ void toggleDO(){
 // センサのキャリブレーション（センサ値のバイアス処理）関数
 void calibrateSensors(){
   calibrateGyroBias(); // ジャイロセンサのバイアスを設定
-  setAltBias(); // 高度センサのバイアスを設定
+  setAltBias(); // 距離センサのバイアスを設定
 }
 
 // 姿勢角のキャリブレーション関数

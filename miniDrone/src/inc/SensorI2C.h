@@ -20,7 +20,13 @@
     void setToFFlag( bool );    
 
     void updateAltitudeVal();   // 高度情報の更新
-    uint16_t getAltitudeVal();  // 高度計測値のゲッタ関数
+
+    float lowpassFilter_demo( float, float ); // ローパスフィルタの実装例
+
     void setAltBias(); // 高度計測値のバイアスのセッタ関数
-    float getAltitudeVal_wo_b(); // バイアス処理後の高度を取得する関数
+
+    float getAltitudeVal();  // 高度計測値のゲッタ関数
+    float getAltitudeVal_wo_b();  // 高度計測値のゲッタ関数
+    float getFilteredAltitudeVal(); // フィルタ後の高度計測値のゲッタ関数
+    float getFilteredAltitudeVal_wo_b(); // バイアス処理後の高度を取得する関数
 #endif  // if def文の終わり

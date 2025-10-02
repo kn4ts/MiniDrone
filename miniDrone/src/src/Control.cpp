@@ -60,7 +60,7 @@ static int8_t status = 0 ; // ステータス
 // 制御器の実装例
 //   引数：フィードバックされる信号
 //   返り値：PWM指令値の配列の先頭アドレス
-float* controller_demo( float* y, float distance ){
+float* controller_demo( float* y, float alti ){
 
     // 時間算出
     currTime = millis(); // 現在時刻の取得
@@ -104,17 +104,17 @@ float* controller_demo( float* y, float distance ){
     yaw.filt_prev = yaw.filt;
 
     // 高度情報
-    alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
-    alt.filt = compensationWithAttitude( alt.filt, rol.filt, pit.filt );
+    //alt.filt = lowpassFilterAltitude_demo( alt.filt_prev, distance ) ; // 高度計測値にローパスフィルタをかける
+    alt.corr = compensationWithAttitude( alti, rol.filt, pit.filt );
     //
-    alt.ed = ( -alt.filt +alt.filt_prev ) / deltaTime ; // 微分先行で計測値を数値微分
-    alt.e = ref_alt -alt.filt ; // 現在の誤差
+    alt.ed = ( -alt.corr +alt.corr_prev ) / deltaTime ; // 微分先行で計測値を数値微分
+    alt.e = ref_alt -alt.corr ; // 現在の誤差
     alt.ei += alt.e * deltaTime ; // 誤差の積分
     //
-    alt.filt_prev = alt.filt ; // 1ステップ前のフィルタ後高度を更新
+    alt.corr_prev = alt.corr ; // 1ステップ前のフィルタ後高度を更新
     //
     // ステータス（飛行状況）の判定・更新
-    if( status == 0 && distance > 6 ){ status = 1; } // 離陸
+    if( status == 0 && alt.corr > 6 ){ status = 1; } // 離陸
 
     // 要求制御力の計算
     float tau_rol = rolK.p * rol.e + rolK.i * rol.ei + rolK.d * rol.ed ; // ロール方向
@@ -140,7 +140,7 @@ float* controller_demo( float* y, float distance ){
 }
 
 // Gimbal control (2DoF: roll, pitch)
-float* gimbalControl_demo( float* att, float* anv, float distance ){
+float* gimbalControl_demo( float* att, float* anv, float alti ){
 
     // 時間計測（us精度）とクリップ
     currTime_us = micros();
@@ -173,12 +173,12 @@ float* gimbalControl_demo( float* att, float* anv, float distance ){
     yaw.ei += yaw.e * deltaTime;
 
     // ---- 高度ブロック（傾斜補償＋微分先行）----
-    alt.filt = lowpassFilterAltitude_demo(alt.filt_prev, distance);
-    alt.filt = compensationWithAttitude(alt.filt, rol.filt, pit.filt);
-    alt.ed   = (alt.filt_prev - alt.filt) / deltaTime;   // 計測値先行の微分
-    alt.e    = ref_alt - alt.filt;
+    //alt.filt = lowpassFilterAltitude_demo(alt.filt_prev, distance);
+    alt.corr = compensationWithAttitude( alti, rol.filt, pit.filt);
+    alt.ed   = (alt.corr_prev - alt.corr) / deltaTime;   // 計測値先行の微分
+    alt.e    = ref_alt - alt.corr;
     alt.ei  += alt.e * deltaTime;
-    alt.filt_prev = alt.filt;
+    alt.corr_prev = alt.corr;
 
     // 積分の簡易アンチワインドアップ（飽和前にクランプ）
     const float I_LIM_RP  = 100.0f;
@@ -263,11 +263,11 @@ float saturate_controller_rollpitch( float u ){
 }
 
 // ローパスフィルタの実装例
-float lowpassFilterAltitude_demo( float alt_filt_prev, float dist ){
-    // 高度計測値に1次のローパスフィルタをかける
-    float alt_filt_new = ( 1 - alpha.alt ) * alt_filt_prev + alpha.alt * dist ;
-    return alt_filt_new;
-}
+//float lowpassFilterAltitude_demo( float alt_filt_prev, float dist ){
+//    // 高度計測値に1次のローパスフィルタをかける
+//    float alt_filt_new = ( 1 - alpha.alt ) * alt_filt_prev + alpha.alt * dist ;
+//    return alt_filt_new;
+//}
 float lowpassFilterRoll_demo( float rol_filt_prev, float rol ){
     // ロール角計測値に1次のローパスフィルタをかける
     float rol_filt_new = ( 1 - alpha.rol ) * rol_filt_prev + alpha.rol * rol ;

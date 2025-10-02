@@ -137,8 +137,9 @@ void loop() {
         if ( getToFFlag() ){
           setToFFlag(false); // ToFセンサフラグをおろす
           // 注意：測定値が準備できていないとブロックする
+          //updateAltitudeVal();
           updateAltitudeVal();
-          alt = getAltitudeVal_wo_b();
+          alt = getFilteredAltitudeVal_wo_b();
         }
 
         /*
@@ -241,7 +242,8 @@ void loop() {
 
         // 制御器内部の情報を取得
         float* control_force = getControlForceReq(); // 要求制御力を取得
-        float alt_fil = getAltitudeFiltered(); // フィルタ処理後の高度を取得
+        //float alt_fil = getFilteredDistanceVal_wo_b(); // フィルタ処理後の高度を取得
+        float alt_wo_b = getAltitudeVal_wo_b(); // バイアス処理後の高度を取得
         float rol_fil = getRollFiltered(); // フィルタ処理後のロール角を取得
         float pit_fil = getPitchFiltered(); // フィルタ処理後のピッチ角を取得
         float yaw_fil = getYawFiltered(); // フィルタ処理後のヨー角を取得
@@ -250,8 +252,8 @@ void loop() {
         float ref_pit = getPitchReference(); // ピッチ角指令値を取得
 
         // BLE通信の送信メッセージを作成
-        setMsgSendBLE( currentTime, att, anv, alt, control_force,
-                   alt_fil, rol_fil, pit_fil, yaw_fil,
+        setMsgSendBLE( currentTime, att, anv, alt_wo_b, control_force,
+                   alt, rol_fil, pit_fil, yaw_fil,
                    ref_alt, ref_rol, ref_pit ); // 送信メッセージ作成
         sendMessageBLE(msgSendBLE); // メッセージ送信
 

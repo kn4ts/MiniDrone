@@ -97,6 +97,7 @@
     extern float* att ;  // 姿勢を格納した配列のポインタ格納用変数
     extern float* anv ;  // 角速度を格納した配列のポインタ格納用変数
     extern float alt ;   // 高度を格納する変数
+    //extern float dist ;   // 距離を格納する変数
 
     extern float* mag ;  // 地磁気センサの計測値を格納した配列のポインタ格納用変数
 
